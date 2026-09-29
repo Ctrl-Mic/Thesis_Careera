@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Landing() {
+  const navigate = useNavigate();
   const [isCreateAccount, setIsCreateAccount] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
@@ -15,6 +17,8 @@ function Landing() {
   });
 
   const [showHelp, setShowHelp] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   function handleChange(event) {
     const { name, value, type, checked } = event.target;
@@ -27,13 +31,15 @@ function Landing() {
 
   function switchAuthMode(createAccount) {
     setIsCreateAccount(createAccount);
+    setLoginError("");
 
     setShowPassword(false);
     setShowConfirmPassword(false);
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    setLoginError("");
 
     if (isCreateAccount) {
       if (
@@ -60,12 +66,35 @@ function Landing() {
       return;
     }
 
-    if (!formData.email || !formData.password) {
-      alert("Please enter your email/username and password.");
+    if (!formData.email.trim() || !formData.password) {
+      setLoginError("Please enter your email/username and password.");
       return;
     }
 
-    alert("Login submitted.");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      });
+      const result = await response.json();
+
+      if (result.success === true) {
+        navigate("/home");
+        return;
+      }
+
+      setLoginError(result.message || "Invalid email or password");
+    } catch {
+      setLoginError("Unable to connect to the login server. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -268,7 +297,7 @@ function Landing() {
                       id="email"
                       name="email"
                       type="text"
-                        placeholder="name@gmail.com"
+                      placeholder="name@gmail.com"
                       value={formData.email}
                       onChange={handleChange}
                     />
@@ -391,10 +420,25 @@ function Landing() {
                 )}
 
                 {/* Submit */}
-                <button type="submit" className="auth-submit">
-                  {isCreateAccount ? "Sign Up" : "Login"}
+                <button
+                  type="submit"
+                  className="auth-submit"
+                  disabled={isLoading}
+                  aria-busy={isLoading}
+                >
+                  {isCreateAccount
+                    ? "Sign Up"
+                    : isLoading
+                      ? "Signing in..."
+                      : "Login"}
                 </button>
               </form>
+
+              {loginError && (
+                <p className="auth-login-feedback" role="alert">
+                  {loginError}
+                </p>
+              )}
 
               {/* Divider */}
               <div className="auth-divider">
@@ -464,6 +508,7 @@ function Landing() {
         </section>
       </main>
 
+      
     </div>
   );
 }

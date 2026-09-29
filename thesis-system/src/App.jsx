@@ -1,7 +1,22 @@
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import Assessment from "./pages/Assessment";
+import ForgotPassword from "./pages/ForgotPassword";
+import Home from "./pages/Home";
 import Landing from "./pages/Landing";
 
 function App() {
-  return <Landing />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Landing />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/assessment" element={<Assessment />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App;
