@@ -48,21 +48,46 @@ function Landing() {
         !formData.password ||
         !formData.confirmPassword
       ) {
-        alert("Please complete all required fields.");
+        setLoginError("Please complete all required fields.");
         return;
       }
 
       if (formData.password.length < 8) {
-        alert("Password must contain at least 8 characters.");
+        setLoginError("Password must contain at least 8 characters.");
         return;
       }
 
       if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match.");
+        setLoginError("Passwords do not match.");
         return;
       }
 
-      alert("Account created successfully.");
+      setIsLoading(true);
+
+      try {
+        const response = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: formData.fullName.trim(),
+            email: formData.email.trim(),
+            password: formData.password,
+          }),
+        });
+        const result = await response.json();
+
+        if (result.success === true) {
+          navigate("/home");
+          return;
+        }
+
+        setLoginError(result.message || "Unable to create account.");
+      } catch {
+        setLoginError("Unable to connect to the authentication server.");
+      } finally {
+        setIsLoading(false);
+      }
+
       return;
     }
 
