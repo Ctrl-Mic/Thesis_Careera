@@ -4,6 +4,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import Landing from "./pages/Landing";
 import Profile from "./pages/Profile";
+import Saved from "./pages/Saved";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Landing />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/saved" element={<Saved />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/assessment" element={<Assessment />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />

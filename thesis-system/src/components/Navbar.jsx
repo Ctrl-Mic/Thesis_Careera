@@ -74,7 +74,7 @@ function Icon({ name, size = 18, className = "" }) {
 const sidebarItems = [
   { label: "Home", to: "/home", icon: "home" },
   { label: "Profile", to: "/profile", icon: "user" },
-  { label: "Saved", to: "/home#saved-opportunities", icon: "bookmark" },
+  { label: "Saved", to: "/saved", icon: "bookmark" },
   { label: "Settings", to: "/home#completeness", icon: "settings" },
   { label: "Help", to: "/home#quick-insights", icon: "help" },
 ];
@@ -86,6 +86,11 @@ export default function Navbar({ children, searchText = "", onSearchChange = () 
   useEffect(() => {
     if (pathname === "/profile") {
       setSelectedItem("Profile");
+      return;
+    }
+
+    if (pathname === "/saved") {
+      setSelectedItem("Saved");
       return;
     }
 

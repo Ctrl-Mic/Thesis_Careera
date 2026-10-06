@@ -1,40 +1,8 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-
-const recommendedCareer = {
-  id: "recommended-frontend",
-  title: "Junior Frontend Developer",
-  company: "Accenture",
-  location: "Mandaluyong",
-  employmentType: "Full Time",
-  workType: "On-site",
-  skills: ["React", "TypeScript", "Tailwind CSS"],
-  summary: "A sample recommendation based on your profile and interests.",
-};
-
-const opportunities = [
-  {
-    id: "opportunity-ui",
-    title: "Junior UI Developer",
-    company: "Northstar Digital",
-    location: "Makati",
-    employmentType: "Full Time",
-    workType: "Hybrid",
-    skills: ["React", "CSS", "Figma"],
-    summary: "A prototype opportunity for early-career designers and developers.",
-  },
-  {
-    id: "opportunity-web",
-    title: "Web Developer Intern",
-    company: "Brightpath Labs",
-    location: "Manila",
-    employmentType: "Internship",
-    workType: "On-site",
-    skills: ["JavaScript", "HTML", "Git"],
-    summary: "A sample practicum listing for students building web skills.",
-  },
-];
+import { getJobs } from "../services/jobicyApi";
+import { getSavedJobsForAccount, persistSavedJobs } from "../services/savedJobs";
 
 const insights = [
   {
@@ -61,34 +29,82 @@ const insights = [
 ];
 
 function Home() {
+  const [jobs, setJobs] = useState([]);
   const [searchText, setSearchText] = useState("");
-  const [savedJobs, setSavedJobs] = useState([]);
+  const [savedJobs, setSavedJobs] = useState(() => getSavedJobsForAccount().map((entry) => entry.id));
   const [selectedInsight, setSelectedInsight] = useState("");
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const searchTerm = searchText.trim().toLowerCase();
-  const matchesSearch = (job) =>
-    !searchTerm ||
-    [job.title, job.company, job.location, ...job.skills]
-      .join(" ")
-      .toLowerCase()
-      .includes(searchTerm);
+  useEffect(() => {
+    let isMounted = true;
 
-  const recommendation = matchesSearch(recommendedCareer)
-    ? recommendedCareer
-    : null;
-  const filteredOpportunities = opportunities.filter(matchesSearch);
+    async function loadJobs() {
+      try {
+        const fetchedJobs = await getJobs();
+        if (isMounted) {
+          setJobs(fetchedJobs);
+        }
+      } catch (fetchError) {
+        if (isMounted) {
+          setError(fetchError.message || "Unable to load jobs right now.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadJobs();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const searchTerm = searchText.trim().toLowerCase();
+  const filteredJobs = useMemo(
+    () =>
+      jobs.filter((job) =>
+        !searchTerm ||
+        [job.title, job.company, job.location, ...job.skills]
+          .join(" ")
+          .toLowerCase()
+          .includes(searchTerm)
+      ),
+    [jobs, searchTerm]
+  );
+
+  const recommendation = filteredJobs[0] ?? null;
+  const browseJobs = filteredJobs.slice(1);
 
   function toggleSaved(jobId) {
-    setSavedJobs((currentSaved) =>
-      currentSaved.includes(jobId)
-        ? currentSaved.filter((savedId) => savedId !== jobId)
-        : [...currentSaved, jobId]
-    );
+    setSavedJobs((currentSaved) => {
+      const safeId = String(jobId);
+      const existingEntries = getSavedJobsForAccount();
+      const nextSaved = currentSaved.includes(safeId)
+        ? currentSaved.filter((savedId) => savedId !== safeId)
+        : [...currentSaved, safeId];
+
+      const nextEntries = nextSaved.map((savedId) => {
+        const existingEntry = existingEntries.find((entry) => String(entry.id) === String(savedId));
+        return {
+          id: String(savedId),
+          savedAt: existingEntry?.savedAt ?? Date.now(),
+        };
+      });
+
+      persistSavedJobs(nextEntries);
+      return nextSaved;
+    });
   }
 
-  function showPrototypeNotice(job) {
-    setNotice(`${job.title} is a sample listing. Applications are not enabled.`);
+  function openJob(job) {
+    setSelectedJob(job);
+    setNotice(`Viewing ${job.title} from ${job.company}.`);
   }
 
   return (
@@ -117,17 +133,21 @@ function Home() {
             <div className="dashboard-section-heading">
               <div>
                 <h2>Recommended Career</h2>
-                <p>Prototype suggestions based on your profile.</p>
+                <p>Live job suggestions from Jobicy.</p>
               </div>
-              <span className="prototype-label">Sample data</span>
+              <span className="prototype-label">Live data</span>
             </div>
 
-            {recommendation ? (
+            {loading ? (
+              <p className="dashboard-empty-state">Loading opportunities...</p>
+            ) : error ? (
+              <p className="dashboard-empty-state">{error}</p>
+            ) : recommendation ? (
               <JobCard
                 job={recommendation}
-                isSaved={savedJobs.includes(recommendation.id)}
+                isSaved={savedJobs.includes(String(recommendation.id))}
                 onToggleSave={() => toggleSaved(recommendation.id)}
-                onApply={() => showPrototypeNotice(recommendation)}
+                onApply={() => openJob(recommendation)}
               />
             ) : (
               <p className="dashboard-empty-state">No recommendations match “{searchText}”.</p>
@@ -138,22 +158,22 @@ function Home() {
             <div className="dashboard-section-heading">
               <div>
                 <h2>Browse Opportunities</h2>
-                <p>Explore sample roles and practicum opportunities.</p>
+                <p>Explore real remote roles and internships from the API.</p>
               </div>
-              <span className="prototype-label">Prototype listings</span>
+              <span className="prototype-label">Live listings</span>
             </div>
 
             <div className="opportunity-list">
-              {filteredOpportunities.map((job) => (
+              {!loading && !error && browseJobs.map((job) => (
                 <JobCard
                   key={job.id}
                   job={job}
-                  isSaved={savedJobs.includes(job.id)}
+                  isSaved={savedJobs.includes(String(job.id))}
                   onToggleSave={() => toggleSaved(job.id)}
-                  onApply={() => showPrototypeNotice(job)}
+                  onApply={() => openJob(job)}
                 />
               ))}
-              {filteredOpportunities.length === 0 && (
+              {!loading && !error && browseJobs.length === 0 && (
                 <p className="dashboard-empty-state">No opportunities match “{searchText}”.</p>
               )}
             </div>
@@ -220,13 +240,69 @@ function Home() {
       </div>
 
       <p className="dashboard-disclaimer">
-        Career and company details shown here are mock data for this thesis prototype, not live openings.
+        Job data is pulled from the live Jobicy remote jobs API for this prototype.
       </p>
 
       <button className="assistant-button" type="button" aria-label="Career assistant prototype">
         <Icon name="bot" />
         <span className="assistant-dot" />
       </button>
+
+      {selectedJob && (
+        <div className="job-modal-backdrop" onClick={() => setSelectedJob(null)}>
+          <div className="job-modal" onClick={(event) => event.stopPropagation()}>
+            <button className="job-modal-close" type="button" onClick={() => setSelectedJob(null)} aria-label="Close job details">
+              ×
+            </button>
+
+            <div className="job-modal-header">
+              <div className="company-mark large" aria-hidden="true">
+                {selectedJob.logo ? (
+                  <img src={selectedJob.logo} alt={selectedJob.company} className="company-logo" />
+                ) : (
+                  selectedJob.company.slice(0, 1)
+                )}
+              </div>
+
+              <div>
+                <span className="job-company">{selectedJob.company}</span>
+                <h3>{selectedJob.title}</h3>
+              </div>
+            </div>
+
+            <div className="job-modal-grid">
+              <div className="job-modal-info">
+                <p><strong>Location:</strong> {selectedJob.location || "Remote"}</p>
+                <p><strong>Employment:</strong> {selectedJob.employmentType || "Not specified"}</p>
+                <p><strong>Work Mode:</strong> {selectedJob.workType || "Remote"}</p>
+                <p><strong>Salary:</strong> {selectedJob.salary || "Not specified"}</p>
+                <p><strong>Salary Period:</strong> {selectedJob.salaryPeriod || "Not specified"}</p>
+                <p><strong>Skills:</strong> {selectedJob.skills?.length ? selectedJob.skills.join(", ") : "Not specified"}</p>
+              </div>
+
+              <div className="job-modal-summary">
+                <h4>Job Summary</h4>
+                <p>{selectedJob.summary}</p>
+              </div>
+            </div>
+
+            <div className="job-modal-actions">
+              <button className="save-job-button" type="button" onClick={() => toggleSaved(selectedJob.id)}>
+                {savedJobs.includes(String(selectedJob.id)) ? "Saved" : "Save"}
+              </button>
+              {selectedJob.url && selectedJob.url !== "#" ? (
+                <a className="apply-button" href={selectedJob.url} target="_blank" rel="noreferrer">
+                  Open Original Post
+                </a>
+              ) : (
+                <button className="apply-button" type="button" disabled>
+                  No Link
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Navbar>
   );
 }
@@ -235,12 +311,14 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
   return (
     <article className="job-card">
       <div className="job-card-topline">
-        <div className="company-mark" aria-hidden="true">{job.company.slice(0, 1)}</div>
+        <div className="company-mark" aria-hidden="true">
+          {job.logo ? <img src={job.logo} alt={job.company} className="company-logo" /> : job.company.slice(0, 1)}
+        </div>
         <div className="job-title-group">
           <span className="job-company">{job.company}</span>
           <h3>{job.title}</h3>
         </div>
-        <span className="job-prototype-tag">Prototype</span>
+        <span className="job-prototype-tag">Live</span>
       </div>
 
       <p className="job-summary">{job.summary}</p>
@@ -265,7 +343,7 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
           >
             <Icon name="bookmark" />
           </button>
-          <button className="apply-button" type="button" onClick={onApply}>Apply</button>
+          <button className="apply-button" type="button" onClick={onApply}>View</button>
         </div>
       </div>
     </article>

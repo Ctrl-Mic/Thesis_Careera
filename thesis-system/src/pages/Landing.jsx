@@ -110,6 +110,8 @@ function Landing() {
       const result = await response.json();
 
       if (result.success === true) {
+        window.localStorage.setItem("careerera_current_account", formData.email.trim().toLowerCase());
+        window.localStorage.setItem("careerera_current_account", formData.email.trim().toLowerCase());
         navigate("/home");
         return;
       }
