@@ -4,11 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --config frontend/vite.config.js",
+    "build": "vite build --config frontend/vite.config.js",
     "lint": "eslint .",
     "server": "node backend/server.js",
-    "preview": "vite preview",
+    "preview": "vite preview --config frontend/vite.config.js",
     "postinstall": "prisma skills sync || exit 0"
   },
   "dependencies": {

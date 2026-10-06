@@ -1,14 +1,14 @@
 import PropTypes from "prop-types";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 
 const tabs = ["Profile", "Experience & Education", "Resume & Certificates"];
 
 const initialProfile = {
-  firstName: "First Name",
-  surname: "Surname",
-  email: "email@gmail.com",
+  firstName: "",
+  surname: "",
+  email: "",
   phone: "09XXXXXXXXX",
   location: "Barangay, City",
 };
@@ -54,11 +54,6 @@ const internshipHistory = [
     date: "2023 - 2024",
   },
 ];
-
-const resumeItem = {
-  name: "Resume.pdf",
-  uploaded: "Uploaded 2 days ago",
-};
 
 const certificateCards = [
   { id: 1, title: "Name/Title", location: "Location", date: "Date" },
@@ -289,7 +284,17 @@ function ProfileHeader({ profile, isEditing, onEditToggle, onChange }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#5B1E13]">
                   <Icon name="mail" size={12} />
                 </span>
-                <span>{profile.email}</span>
+                {isEditing ? (
+                  <input
+                    type="email"
+                    value={profile.email}
+                    readOnly
+                    aria-label="Email address"
+                    className="min-w-0 rounded-lg border border-[#E8DBC1] bg-white px-2 py-1 text-sm text-[#5E4C45] outline-none"
+                  />
+                ) : (
+                  <span>{profile.email}</span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#5B1E13]">
@@ -473,48 +478,54 @@ function ExperienceTabContent() {
   );
 }
 
-function ResumeTabContent({ resumeName, resumeUploadedAt, onUpload, onDelete, onDownload }) {
+function ResumeTabContent({ resumeName, resumeUploadedAt, resumeError, isUploading, onUpload, onDelete, onDownload }) {
   return (
     <div className="space-y-6">
       <div>
         <h3 className="mb-4 text-2xl font-bold text-[#5B1E13]">Resume</h3>
 
         <div className="job-card" style={{ padding: "26px 28px" }}>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#F7E5E3] text-[#C5443A]">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7" aria-hidden="true">
-                  <path d="M7 3.5A2.5 2.5 0 0 1 9.5 1h6.1a1.7 1.7 0 0 1 1.2.5l3.7 3.7a1.7 1.7 0 0 1 .5 1.2v11.1A2.5 2.5 0 0 1 19.5 20h-10A2.5 2.5 0 0 1 7 17.5v-14Z" />
-                  <path d="M16 1v5h5" />
-                  <path d="M9 10h6M9 14h6" />
-                </svg>
+          {resumeName ? (
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-[#F7E5E3] text-[#C5443A]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7" aria-hidden="true">
+                    <path d="M7 3.5A2.5 2.5 0 0 1 9.5 1h6.1a1.7 1.7 0 0 1 1.2.5l3.7 3.7a1.7 1.7 0 0 1 .5 1.2v11.1A2.5 2.5 0 0 1 19.5 20h-10A2.5 2.5 0 0 1 7 17.5v-14Z" />
+                    <path d="M16 1v5h5" />
+                    <path d="M9 10h6M9 14h6" />
+                  </svg>
+                </div>
+
+                <div>
+                  <p className="text-lg font-bold text-[#3B241C]">{resumeName}</p>
+                  <p className="text-sm text-[#745F57]">{resumeUploadedAt}</p>
+                </div>
               </div>
 
-              <div>
-                <p className="text-lg font-bold text-[#3B241C]">{resumeName}</p>
-                <p className="text-sm text-[#745F57]">{resumeUploadedAt}</p>
+              <div className="flex items-center gap-3 text-[#5B1E13]">
+                <button type="button" onClick={onDelete} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F7E7C2] transition hover:bg-[#F4D279]" aria-label="Delete resume">
+                  <Icon name="trash" size={18} />
+                </button>
+                <button type="button" onClick={onDownload} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F7E7C2] transition hover:bg-[#F4D279]" aria-label="Download resume">
+                  <Icon name="download" size={18} />
+                </button>
               </div>
             </div>
-
-            <div className="flex items-center gap-3 text-[#5B1E13]">
-              <button type="button" onClick={onDelete} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F7E7C2] transition hover:bg-[#F4D279]" aria-label="Delete resume">
-                <Icon name="trash" size={18} />
-              </button>
-              <button type="button" onClick={onDownload} className="flex h-11 w-11 items-center justify-center rounded-full bg-[#F7E7C2] transition hover:bg-[#F4D279]" aria-label="Download resume">
-                <Icon name="download" size={18} />
-              </button>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm text-[#745F57]">No resume uploaded yet.</p>
+          )}
         </div>
 
+        {resumeError && <p className="mt-3 text-sm text-[#A32D24]" role="alert">{resumeError}</p>}
+
         <div className="mt-4">
-          <input type="file" accept=".pdf,.doc,.docx" onChange={onUpload} className="hidden" id="resume-upload" />
+          <input type="file" accept=".pdf,.doc,.docx" onChange={onUpload} className="hidden" id="resume-upload" disabled={isUploading} />
           <label
             htmlFor="resume-upload"
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border border-[#5B1E13] bg-transparent px-5 py-4 text-base font-semibold text-[#5B1E13] transition hover:bg-[#F7E7C2]"
           >
             <Icon name="upload" size={18} />
-            Upload New Resume
+            {isUploading ? "Uploading..." : "Upload New Resume"}
           </label>
         </div>
       </div>
@@ -545,6 +556,8 @@ function ResumeTabContent({ resumeName, resumeUploadedAt, onUpload, onDelete, on
 ResumeTabContent.propTypes = {
   resumeName: PropTypes.string.isRequired,
   resumeUploadedAt: PropTypes.string.isRequired,
+  resumeError: PropTypes.string.isRequired,
+  isUploading: PropTypes.bool.isRequired,
   onUpload: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onDownload: PropTypes.func.isRequired,
@@ -554,21 +567,127 @@ function Profile() {
   const [activeTab, setActiveTab] = useState("Resume & Certificates");
   const [isEditing, setIsEditing] = useState(false);
   const [profile, setProfile] = useState(initialProfile);
-  const [resumeName, setResumeName] = useState(resumeItem.name);
-  const [resumeUploadedAt, setResumeUploadedAt] = useState(resumeItem.uploaded);
+  const [resume, setResume] = useState(null);
+  const [accountEmail] = useState(() => window.localStorage.getItem("careerera_current_account") ?? "");
+  const [profileError, setProfileError] = useState(() => accountEmail ? "" : "Sign in to view your profile.");
+  const [resumeError, setResumeError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   const [searchText, setSearchText] = useState("");
+
+  useEffect(() => {
+    if (!accountEmail) return;
+
+    async function loadProfile() {
+      try {
+        const response = await fetch(`/api/profile?email=${encodeURIComponent(accountEmail)}`);
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || "Unable to load your profile.");
+
+        const nameParts = result.user.fullName.trim().split(/\s+/);
+        const surname = nameParts.length > 1 ? nameParts.pop() : "";
+        setProfile((current) => ({
+          ...current,
+          firstName: nameParts.join(" "),
+          surname,
+          email: result.user.email,
+        }));
+        setResume(result.resume);
+      } catch (error) {
+        setProfileError(error.message || "Unable to load your profile.");
+      }
+    }
+
+    loadProfile();
+  }, [accountEmail]);
 
   function handleProfileChange(event) {
     const { name, value } = event.target;
     setProfile((current) => ({ ...current, [name]: value }));
   }
 
-  function handleUploadResume(event) {
+  async function handleUploadResume(event) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setResumeName(file.name || "Resume.pdf");
-    setResumeUploadedAt(`Uploaded ${new Date().toLocaleDateString()}`);
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    if (!extension || !["pdf", "doc", "docx"].includes(extension) || file.size > 5 * 1024 * 1024) {
+      setResumeError("Choose a PDF, DOC, or DOCX file under 5 MB.");
+      event.target.value = "";
+      return;
+    }
+
+    const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    const isValidSignature = extension === "pdf"
+      ? String.fromCharCode(...header.slice(0, 5)) === "%PDF-"
+      : extension === "doc"
+        ? [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1].every((byte, index) => header[index] === byte)
+        : header[0] === 0x50 && header[1] === 0x4b && header[2] === 0x03 && header[3] === 0x04;
+
+    if (!isValidSignature) {
+      setResumeError("The selected file does not match its file type.");
+      event.target.value = "";
+      return;
+    }
+
+    setResumeError("");
+    setIsUploading(true);
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      const response = await fetch("/api/profile/resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: accountEmail,
+          fileName: file.name,
+          contentBase64: dataUrl.split(",")[1],
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Unable to upload resume.");
+
+      setResume(result.resume);
+    } catch (error) {
+      setResumeError(error.message || "Unable to upload resume.");
+    } finally {
+      setIsUploading(false);
+      event.target.value = "";
+    }
+  }
+
+  async function handleDeleteResume() {
+    setResumeError("");
+    try {
+      const response = await fetch(`/api/profile/resume?email=${encodeURIComponent(accountEmail)}`, { method: "DELETE" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Unable to delete resume.");
+      setResume(null);
+    } catch (error) {
+      setResumeError(error.message || "Unable to delete resume.");
+    }
+  }
+
+  async function handleDownloadResume() {
+    try {
+      const response = await fetch(`/api/profile/resume?email=${encodeURIComponent(accountEmail)}`);
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || "Unable to download resume.");
+      }
+
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = resume?.name || "resume";
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setResumeError(error.message || "Unable to download resume.");
+    }
   }
 
   function renderTabContent() {
@@ -582,16 +701,13 @@ function Profile() {
 
     return (
       <ResumeTabContent
-        resumeName={resumeName}
-        resumeUploadedAt={resumeUploadedAt}
+        resumeName={resume?.name ?? ""}
+        resumeUploadedAt={resume?.uploadedAt ? `Uploaded ${new Date(resume.uploadedAt).toLocaleDateString()}` : ""}
+        resumeError={resumeError}
+        isUploading={isUploading}
         onUpload={handleUploadResume}
-        onDelete={() => {
-          setResumeName("Resume.pdf");
-          setResumeUploadedAt("Uploaded 2 days ago");
-        }}
-        onDownload={() => {
-          alert("Download resume action triggered.");
-        }}
+        onDelete={handleDeleteResume}
+        onDownload={handleDownloadResume}
       />
     );
   }
@@ -615,6 +731,7 @@ function Profile() {
         onEditToggle={() => setIsEditing((current) => !current)}
         onChange={handleProfileChange}
       />
+      {profileError && <p className="mt-3 text-sm text-[#A32D24]" role="alert">{profileError}</p>}
 
       <div className="mt-7 flex flex-wrap gap-4 rounded-[20px] bg-[#FDF8EE] p-2 shadow-sm ring-1 ring-[#F0E5D4]" role="tablist" aria-label="Profile sections">
         {tabs.map((tab) => {

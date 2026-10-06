@@ -27,3 +27,22 @@ model Assessment {
 
   @@map("assessments")
 }
+
+model Profile {
+  profileId        Int      @id @default(autoincrement()) @map("profile_id")
+  userId           String?  @map("user_id")
+  academic_program String?  @db.VarChar(100)
+  skills           String?
+  certifications   String?
+  experience       String?
+  career_preference String? @db.VarChar(100)
+  resumeFile       Bytes?   @map("resume_file") @db.ByteA
+  resumeFileLegacy String?  @map("resume_file_legacy") @db.VarChar(255)
+  resumeFileName   String?  @map("resume_file_name")
+  resumeMimeType   String?  @map("resume_mime_type")
+  resumeUploadedAt DateTime? @map("resume_uploaded_at")
+  portfolio_file   String?  @db.VarChar(255)
+  certificates_file String? @db.VarChar(255)
+
+  @@map("profile")
+}
