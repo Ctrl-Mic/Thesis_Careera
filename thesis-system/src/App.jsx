@@ -3,6 +3,7 @@ import Assessment from "./pages/Assessment";
 import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import Landing from "./pages/Landing";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Landing />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/assessment" element={<Assessment />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

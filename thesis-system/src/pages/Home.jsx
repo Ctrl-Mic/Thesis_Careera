@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 
 const recommendedCareer = {
   id: "recommended-frontend",
@@ -91,202 +92,142 @@ function Home() {
   }
 
   return (
-    <div className="dashboard-app">
-      <aside className="dashboard-sidebar">
-        <Link className="sidebar-brand" to="/home" aria-label="Careera home">
-          <span>C</span><span className="sidebar-brand-star">★</span><strong>REERA</strong>
-        </Link>
-
-        <nav className="sidebar-nav" aria-label="Dashboard navigation">
-          <a className="sidebar-nav-link active" href="#dashboard-top" aria-current="page">
-            <span className="sidebar-icon"><Icon name="home" /></span>
-            <span>Home</span>
-          </a>
-          <a className="sidebar-nav-link" href="#profile">
-            <span className="sidebar-icon"><Icon name="user" /></span>
-            <span>Profile</span>
-          </a>
-          <a className="sidebar-nav-link" href="#saved-opportunities">
-            <span className="sidebar-icon"><Icon name="bookmark" /></span>
-            <span>Saved</span>
-          </a>
-          <a className="sidebar-nav-link" href="#completeness">
-            <span className="sidebar-icon"><Icon name="settings" /></span>
-            <span>Settings</span>
-          </a>
-          <a className="sidebar-nav-link" href="#quick-insights">
-            <span className="sidebar-icon"><Icon name="help" /></span>
-            <span>Help</span>
-          </a>
-        </nav>
-
-        <div className="sidebar-bottom">
-          <Link className="sidebar-nav-link" to="/login">
-            <span className="sidebar-icon"><Icon name="logout" /></span>
-            <span>Logout</span>
-          </Link>
+    <Navbar
+      searchText={searchText}
+      onSearchChange={(event) => setSearchText(event.target.value)}
+    >
+      <div className="dashboard-heading" id="dashboard-top">
+        <div>
+          <p className="dashboard-eyebrow">CAREERA / STUDENT SPACE</p>
+          <h1>Your career dashboard</h1>
+          <p className="dashboard-subtitle">
+            Explore recommendations and opportunities matched to your goals.
+          </p>
         </div>
-      </aside>
+        <Link className="dashboard-assessment-link" to="/assessment">
+          Take Assessment <span aria-hidden="true">→</span>
+        </Link>
+      </div>
 
-      <div className="dashboard-shell">
-        <header className="dashboard-topbar">
-          <label className="dashboard-search">
-            <Icon name="search" />
-            <input
-              type="search"
-              placeholder="Search"
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              aria-label="Search recommendations and opportunities"
-            />
-          </label>
+      {notice && <p className="dashboard-notice" role="status">{notice}</p>}
 
-          <div className="topbar-actions">
-            <button className="notification-button" type="button" aria-label="Notifications">
-              <Icon name="bell" />
-              <span className="notification-dot" />
-            </button>
-            <button className="profile-button" id="profile" type="button" aria-label="Student profile">
-              <Icon name="user" />
-            </button>
-          </div>
-        </header>
-
-        <main className="dashboard-main" id="dashboard-top">
-          <div className="dashboard-heading">
-            <div>
-              <p className="dashboard-eyebrow">CAREERA / STUDENT SPACE</p>
-              <h1>Your career dashboard</h1>
-              <p className="dashboard-subtitle">
-                Explore recommendations and opportunities matched to your goals.
-              </p>
+      <div className="dashboard-columns">
+        <div className="dashboard-primary-column">
+          <section className="dashboard-section" id="recommended-career">
+            <div className="dashboard-section-heading">
+              <div>
+                <h2>Recommended Career</h2>
+                <p>Prototype suggestions based on your profile.</p>
+              </div>
+              <span className="prototype-label">Sample data</span>
             </div>
-            <Link className="dashboard-assessment-link" to="/assessment">
+
+            {recommendation ? (
+              <JobCard
+                job={recommendation}
+                isSaved={savedJobs.includes(recommendation.id)}
+                onToggleSave={() => toggleSaved(recommendation.id)}
+                onApply={() => showPrototypeNotice(recommendation)}
+              />
+            ) : (
+              <p className="dashboard-empty-state">No recommendations match “{searchText}”.</p>
+            )}
+          </section>
+
+          <section className="dashboard-section" id="saved-opportunities">
+            <div className="dashboard-section-heading">
+              <div>
+                <h2>Browse Opportunities</h2>
+                <p>Explore sample roles and practicum opportunities.</p>
+              </div>
+              <span className="prototype-label">Prototype listings</span>
+            </div>
+
+            <div className="opportunity-list">
+              {filteredOpportunities.map((job) => (
+                <JobCard
+                  key={job.id}
+                  job={job}
+                  isSaved={savedJobs.includes(job.id)}
+                  onToggleSave={() => toggleSaved(job.id)}
+                  onApply={() => showPrototypeNotice(job)}
+                />
+              ))}
+              {filteredOpportunities.length === 0 && (
+                <p className="dashboard-empty-state">No opportunities match “{searchText}”.</p>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <aside className="dashboard-widgets" aria-label="Career widgets">
+          <section className="widget-card completeness-card" id="completeness">
+            <div className="widget-heading">
+              <span className="widget-kicker">PROFILE</span>
+              <h2>Completeness</h2>
+              <p>Take assessment to get your personalized career recommendations</p>
+            </div>
+
+            <div className="completeness-content">
+              <div className="progress-ring" role="img" aria-label="Profile completeness: 80 percent">
+                <span>80%</span>
+              </div>
+              <div>
+                <strong>Almost there</strong>
+                <p>Complete your assessment to refine your matches.</p>
+              </div>
+            </div>
+
+            <Link className="widget-primary-link" to="/assessment">
               Take Assessment <span aria-hidden="true">→</span>
             </Link>
-          </div>
+          </section>
 
-          {notice && <p className="dashboard-notice" role="status">{notice}</p>}
-
-          <div className="dashboard-columns">
-            <div className="dashboard-primary-column">
-              <section className="dashboard-section" id="recommended-career">
-                <div className="dashboard-section-heading">
-                  <div>
-                    <h2>Recommended Career</h2>
-                    <p>Prototype suggestions based on your profile.</p>
-                  </div>
-                  <span className="prototype-label">Sample data</span>
-                </div>
-
-                {recommendation ? (
-                  <JobCard
-                    job={recommendation}
-                    isSaved={savedJobs.includes(recommendation.id)}
-                    onToggleSave={() => toggleSaved(recommendation.id)}
-                    onApply={() => showPrototypeNotice(recommendation)}
-                  />
-                ) : (
-                  <p className="dashboard-empty-state">No recommendations match “{searchText}”.</p>
-                )}
-              </section>
-
-              <section className="dashboard-section" id="saved-opportunities">
-                <div className="dashboard-section-heading">
-                  <div>
-                    <h2>Browse Opportunities</h2>
-                    <p>Explore sample roles and practicum opportunities.</p>
-                  </div>
-                  <span className="prototype-label">Prototype listings</span>
-                </div>
-
-                <div className="opportunity-list">
-                  {filteredOpportunities.map((job) => (
-                    <JobCard
-                      key={job.id}
-                      job={job}
-                      isSaved={savedJobs.includes(job.id)}
-                      onToggleSave={() => toggleSaved(job.id)}
-                      onApply={() => showPrototypeNotice(job)}
-                    />
-                  ))}
-                  {filteredOpportunities.length === 0 && (
-                    <p className="dashboard-empty-state">No opportunities match “{searchText}”.</p>
-                  )}
-                </div>
-              </section>
+          <section className="widget-card insights-card" id="quick-insights">
+            <div className="widget-heading insights-heading">
+              <span className="insights-mark"><Icon name="lightbulb" /></span>
+              <h2>Quick Insights</h2>
             </div>
 
-            <aside className="dashboard-widgets" aria-label="Career widgets">
-              <section className="widget-card completeness-card" id="completeness">
-                <div className="widget-heading">
-                  <span className="widget-kicker">PROFILE</span>
-                  <h2>Completeness</h2>
-                  <p>Take assessment to get your personalized career recommendations</p>
+            <div className="insight-list">
+              {insights.map((insight) => (
+                <div className="insight-item" key={insight.id}>
+                  <button
+                    className="insight-row"
+                    type="button"
+                    aria-expanded={selectedInsight === insight.id}
+                    onClick={() =>
+                      setSelectedInsight((current) =>
+                        current === insight.id ? "" : insight.id
+                      )
+                    }
+                  >
+                    <span className="insight-icon"><Icon name={insight.icon} /></span>
+                    <span className="insight-copy">
+                      <strong>{insight.title}</strong>
+                      <span>{insight.subtitle}</span>
+                    </span>
+                    <Icon name="arrow" />
+                  </button>
+                  {selectedInsight === insight.id && (
+                    <p className="insight-detail">{insight.detail}</p>
+                  )}
                 </div>
-
-                <div className="completeness-content">
-                  <div className="progress-ring" role="img" aria-label="Profile completeness: 80 percent">
-                    <span>80%</span>
-                  </div>
-                  <div>
-                    <strong>Almost there</strong>
-                    <p>Complete your assessment to refine your matches.</p>
-                  </div>
-                </div>
-
-                <Link className="widget-primary-link" to="/assessment">
-                  Take Assessment <span aria-hidden="true">→</span>
-                </Link>
-              </section>
-
-              <section className="widget-card insights-card" id="quick-insights">
-                <div className="widget-heading insights-heading">
-                  <span className="insights-mark"><Icon name="lightbulb" /></span>
-                  <h2>Quick Insights</h2>
-                </div>
-
-                <div className="insight-list">
-                  {insights.map((insight) => (
-                    <div className="insight-item" key={insight.id}>
-                      <button
-                        className="insight-row"
-                        type="button"
-                        aria-expanded={selectedInsight === insight.id}
-                        onClick={() =>
-                          setSelectedInsight((current) =>
-                            current === insight.id ? "" : insight.id
-                          )
-                        }
-                      >
-                        <span className="insight-icon"><Icon name={insight.icon} /></span>
-                        <span className="insight-copy">
-                          <strong>{insight.title}</strong>
-                          <span>{insight.subtitle}</span>
-                        </span>
-                        <Icon name="arrow" />
-                      </button>
-                      {selectedInsight === insight.id && (
-                        <p className="insight-detail">{insight.detail}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </aside>
-          </div>
-
-          <p className="dashboard-disclaimer">
-            Career and company details shown here are mock data for this thesis prototype, not live openings.
-          </p>
-        </main>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
+
+      <p className="dashboard-disclaimer">
+        Career and company details shown here are mock data for this thesis prototype, not live openings.
+      </p>
 
       <button className="assistant-button" type="button" aria-label="Career assistant prototype">
         <Icon name="bot" />
         <span className="assistant-dot" />
       </button>
-    </div>
+    </Navbar>
   );
 }
 
