@@ -43,13 +43,16 @@ function Home() {
 
     async function loadJobs() {
       try {
-        const fetchedJobs = await getJobs();
+        setLoading(true);
+        setError("");
+        const fetchedJobs = await getJobs(searchText);
         if (isMounted) {
           setJobs(fetchedJobs);
         }
       } catch (fetchError) {
         if (isMounted) {
           setError(fetchError.message || "Unable to load jobs right now.");
+          setJobs([]);
         }
       } finally {
         if (isMounted) {
@@ -58,12 +61,13 @@ function Home() {
       }
     }
 
-    loadJobs();
+    const debounceTimer = window.setTimeout(loadJobs, 500);
 
     return () => {
       isMounted = false;
+      window.clearTimeout(debounceTimer);
     };
-  }, []);
+  }, [searchText]);
 
   const searchTerm = searchText.trim().toLowerCase();
   const filteredJobs = useMemo(

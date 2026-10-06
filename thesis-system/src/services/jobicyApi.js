@@ -1,7 +1,22 @@
 const JOBICY_API_URL = "https://jobicy.com/api/v2/remote-jobs";
 
-export async function getJobs() {
-  const response = await fetch(`${JOBICY_API_URL}?count=20`, {
+export function normalizeJobSearchTerm(searchText = "") {
+  return searchText
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-+/g, "-");
+}
+
+export async function getJobs(searchText = "") {
+  const query = normalizeJobSearchTerm(searchText);
+  const count = 50;
+  const url = query
+    ? `${JOBICY_API_URL}?count=${count}&tag=${encodeURIComponent(query)}`
+    : `${JOBICY_API_URL}?count=${count}`;
+
+  const response = await fetch(url, {
     headers: { Accept: "application/json" },
   });
 
