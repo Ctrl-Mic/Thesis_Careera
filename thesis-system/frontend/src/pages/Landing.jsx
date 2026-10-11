@@ -10,6 +10,7 @@ function Landing() {
 
   const [formData, setFormData] = useState({
     fullName: "",
+    studentId: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -25,7 +26,12 @@ function Landing() {
 
     setFormData((previous) => ({
       ...previous,
-      [name]: type === "checkbox" ? checked : value,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : name === "studentId"
+            ? value.toUpperCase()
+            : value,
     }));
   }
 
@@ -44,11 +50,26 @@ function Landing() {
     if (isCreateAccount) {
       if (
         !formData.fullName ||
+        !formData.studentId ||
         !formData.email ||
         !formData.password ||
         !formData.confirmPassword
       ) {
         setLoginError("Please complete all required fields.");
+        return;
+      }
+
+      const normalizedStudentId = formData.studentId.trim().toUpperCase();
+      const studentIdPattern = /^PDM-20\d{2}-\d{6}$/;
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (!studentIdPattern.test(normalizedStudentId)) {
+        setLoginError("Student ID must match the format PDM-20XX-XXXXXX.");
+        return;
+      }
+
+      if (!emailPattern.test(formData.email.trim())) {
+        setLoginError("Please enter a valid email address.");
         return;
       }
 
@@ -70,15 +91,18 @@ function Landing() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             fullName: formData.fullName.trim(),
+            studentId: normalizedStudentId,
             email: formData.email.trim(),
             password: formData.password,
           }),
         });
         const result = await response.json();
 
-        if (result.success === true) {
-          window.localStorage.setItem("careerera_current_account", result.user.email);
-          navigate("/home");
+        if (result.success === true && result.registrationPending === true && result.token) {
+          window.localStorage.removeItem("careerera_current_account");
+          window.localStorage.removeItem("careerera_is_admin");
+          window.localStorage.setItem("careerera_auth_token", result.token);
+          navigate("/verify-student-id");
           return;
         }
 
@@ -112,7 +136,9 @@ function Landing() {
 
       if (result.success === true) {
         window.localStorage.setItem("careerera_current_account", result.user.email);
-        navigate("/home");
+        window.localStorage.setItem("careerera_is_admin", String(result.user.isAdmin));
+        window.localStorage.setItem("careerera_auth_token", result.token);
+        navigate(result.verificationRequired ? "/verify-student-id" : "/home");
         return;
       }
 
@@ -274,6 +300,10 @@ function Landing() {
                       Join Careera to create your personalized career
                       path.
                     </p>
+                    <p>
+                      If your account was preloaded, use the same student ID
+                      and email address to set your password.
+                    </p>
                   </>
                 ) : (
                   <>
@@ -311,6 +341,30 @@ function Landing() {
                   </div>
                 )}
 
+                {isCreateAccount && (
+                  <div className="auth-field">
+                    <label htmlFor="studentId">Student ID</label>
+
+                    <div className="input-wrapper">
+                      <span className="input-icon">
+                        <UserIcon />
+                      </span>
+
+                      <input
+                        id="studentId"
+                        name="studentId"
+                        type="text"
+                        placeholder="PDM-20XX-XXXXXX"
+                        value={formData.studentId}
+                        onChange={handleChange}
+                        pattern="PDM-20[0-9]{2}-[0-9]{6}"
+                        title="Student ID must match the format PDM-20XX-XXXXXX."
+                        maxLength={15}
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Email */}
                 <div className="auth-field">
                   <label htmlFor="email">Email or Username</label>
@@ -323,10 +377,12 @@ function Landing() {
                     <input
                       id="email"
                       name="email"
-                      type="text"
-                      placeholder="name@gmail.com"
+                      type="email"
+                      placeholder="example@gmail.com"
                       value={formData.email}
                       onChange={handleChange}
+                      pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
+                      title="Please enter a valid email address."
                     />
                   </div>
                 </div>
@@ -513,7 +569,7 @@ function Landing() {
                 </button>
               </div>
 
-              {/* Bottom Switch */}
+              {/* Bottom Switch
               <p className="auth-switch-text">
                 {isCreateAccount
                   ? "Already have an account?"
@@ -529,7 +585,7 @@ function Landing() {
                     ? " Login"
                     : " Create Account"}
                 </button>
-              </p>
+              </p> */}
             </div>
           </div>
         </section>

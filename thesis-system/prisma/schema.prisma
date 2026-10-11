@@ -9,9 +9,12 @@ datasource db {
 
 model User {
   id           String       @id @default(uuid()) @db.Uuid
-  fullName     String       @map("full_name")
-  email        String       @unique
-  passwordHash String       @map("password_hash")
+  fullName     String?      @map("full_name")
+  email        String?      @unique
+  passwordHash String?      @map("password_hash")
+  studentId    String?      @map("student_id")
+  isAdmin      Boolean      @default(false) @map("is_admin")
+  isVerified   Boolean      @default(true) @map("is_verified")
   createdAt    DateTime     @default(now()) @map("created_at")
   assessments  Assessment[]
 

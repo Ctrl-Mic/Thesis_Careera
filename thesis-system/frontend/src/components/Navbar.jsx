@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 function Icon({ name, size = 18, className = "" }) {
@@ -81,27 +80,19 @@ const sidebarItems = [
 
 export default function Navbar({ children, searchText = "", onSearchChange = () => {} }) {
   const { pathname, hash } = useLocation();
-  const [selectedItem, setSelectedItem] = useState(pathname === "/profile" ? "Profile" : "Home");
-
-  useEffect(() => {
-    if (pathname === "/profile") {
-      setSelectedItem("Profile");
-      return;
-    }
-
-    if (pathname === "/saved") {
-      setSelectedItem("Saved");
-      return;
-    }
-
-    const sectionMap = {
-      "#saved-opportunities": "Saved",
-      "#completeness": "Settings",
-      "#quick-insights": "Help",
-    };
-
-    setSelectedItem(sectionMap[hash] ?? "Home");
-  }, [hash, pathname]);
+  const isAdmin = window.localStorage.getItem("careerera_is_admin") === "true";
+  const sectionMap = {
+    "#saved-opportunities": "Saved",
+    "#completeness": "Settings",
+    "#quick-insights": "Help",
+  };
+  const selectedItem = pathname === "/developer-tools"
+    ? "Developer Tools"
+    : pathname === "/profile"
+      ? "Profile"
+      : pathname === "/saved"
+        ? "Saved"
+        : sectionMap[hash] ?? "Home";
 
   return (
     <div className="dashboard-app">
@@ -117,7 +108,6 @@ export default function Navbar({ children, searchText = "", onSearchChange = () 
             <Link
               key={item.label}
               to={item.to}
-              onClick={() => setSelectedItem(item.label)}
               className={selectedItem === item.label ? "sidebar-nav-link active" : "sidebar-nav-link"}
             >
               <span className="sidebar-icon">
@@ -126,10 +116,31 @@ export default function Navbar({ children, searchText = "", onSearchChange = () 
               <span>{item.label}</span>
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              to="/developer-tools"
+              className={selectedItem === "Developer Tools"
+                ? "sidebar-nav-link sidebar-subnav-link active"
+                : "sidebar-nav-link sidebar-subnav-link"}
+            >
+              <span className="sidebar-icon">
+                <Icon name="settings" className="dashboard-icon" size={20} />
+              </span>
+              <span>Developer Tools</span>
+            </Link>
+          )}
         </nav>
 
         <div className="sidebar-bottom">
-          <Link className="sidebar-nav-link" to="/login">
+          <Link
+            className="sidebar-nav-link"
+            to="/login"
+            onClick={() => {
+              window.localStorage.removeItem("careerera_current_account");
+              window.localStorage.removeItem("careerera_is_admin");
+              window.localStorage.removeItem("careerera_auth_token");
+            }}
+          >
             <span className="sidebar-icon">
               <Icon name="logout" className="dashboard-icon" size={22} />
             </span>
