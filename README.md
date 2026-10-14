@@ -21,7 +21,7 @@ Thesis_Careera combines a React frontend with an Express backend and a Prisma/Po
 - Backend: Express.js
 - Database: PostgreSQL via Prisma ORM
 - Authentication: bcryptjs and signed bearer tokens for admin APIs
-- API integration: Jobicy remote jobs API
+- API integration: Jobicy remote jobs API for frontend search and server-side listing ingestion
 
 ## Project Structure
 
@@ -72,6 +72,7 @@ AUTH_TOKEN_SECRET="replace-with-a-long-random-secret"
 
 If you are using Neon or another managed Postgres service, paste the connection string supplied by that platform.
 Keep `AUTH_TOKEN_SECRET` private and stable across backend restarts and application instances.
+The Jobicy remote jobs API is public and does not require an API key.
 
 ## Installation
 
@@ -132,6 +133,49 @@ This serves the API on:
 
 - http://127.0.0.1:3001
 - health endpoint: http://127.0.0.1:3001/health
+
+Fetch and upsert one Jobicy search into `job_listings`:
+
+```powershell
+npm run fetch:jobs -- --keywords "front desk" --location "Philippines"
+```
+
+To run all configured tourism keywords (up to 50 results per keyword, with a
+short delay between requests), use:
+
+```powershell
+npm run fetch:jobs -- --all-defaults
+```
+
+An authenticated admin can trigger one search with `POST /api/admin/jobs/fetch`
+and a JSON body containing non-empty `keywords` and `location` strings. After
+the listings are saved, their skill vectors and dictionary IDF values are
+rebuilt automatically. To rebuild the vectors manually and print listing
+diagnostics, run:
+
+```powershell
+npm run rebuild:listings
+```
+
+### Admin CSV import for job listings
+
+In **Developer tools → Job listings**, admins can import a CSV file or add one
+listing with the form. The CSV header must include `title`, `company`,
+`location`, `description`, `listing_type`, and `external_url`. Every value is
+required; `listing_type` must be `job` or `practicum`, and `external_url` must
+be an HTTP or HTTPS URL. Rows are validated independently. The result reports
+inserted, updated, and rejected counts with a row number and reason for each
+rejection. Re-importing a manual listing with the same external URL updates it.
+Imported listings use source `manual`, and listing skill vectors are rebuilt
+after every import.
+
+Example `job-listings.csv`:
+
+```csv
+title,company,location,description,listing_type,external_url
+Front Desk Associate,Island View Hotel,Cebu,"Welcome guests, manage bookings, and answer inquiries.",job,https://example.com/jobs/front-desk-associate
+Tourism Practicum Student,Coastal Tours,Bohol,"Assist the tour team with guest services and itinerary planning.",practicum,https://example.com/practicum/tourism-student
+```
 
 Start the frontend development server:
 
@@ -198,6 +242,7 @@ npm run build      # create a production build
 npm run preview    # preview the production build locally
 npm run server     # start the Express backend
 npm run lint       # run ESLint checks
+node scripts/match-skills.js <userId>  # inspect resume skill matches and counts
 ```
 
 ## Authentication API
@@ -206,6 +251,7 @@ The backend exposes the following endpoints:
 
 - `POST /api/register` — start a pending registration after matching the submitted full name and student ID against the student record; credentials are saved only after ID and camera verification pass
 - `POST /api/login` — validate user credentials
+- `GET /api/recommendations?limit=20&location=Cebu&type=job` — recompute and return authenticated, ranked job/practicum recommendations (Bearer token required); `type` accepts `job` or `practicum`
 - `GET /api/admin/users` — list user names, student IDs, and emails (admin token required)
 - `POST /api/admin/users/import` — bulk-create password-pending accounts (admin token required)
 
@@ -246,7 +292,7 @@ The home page loads live jobs from the Jobicy API and allows users to:
 Saved opportunities are stored locally for the current account and can be revisited from the saved page.
 
 ### Profile and Navigation
-The app includes profile and navigation pages to support the overall student career portal experience.
+The app includes profile and navigation pages to support the overall student career portal experience. Uploading a text-based PDF resume stores its extracted text, matches it against the skills dictionary, and refreshes the user's resume evidence and final skill weights. Run `node scripts/match-skills.js <userId>` from `thesis-system` to inspect matched skills, terms, and occurrence counts. Certificate upload is not implemented yet; the evidence updater supports adding certificate evidence when that flow is introduced.
 
 ### Admin Developer Tools
 Users whose `is_admin` value is true see **Developer Tools** under Help. The page lists user names, student IDs, and emails, and can export the table to Excel. Admins can also import `.xlsx` files with `name`, `student_id`, and `email` columns; only `student_id` is required. New imported records have no name, email, or password until the student registers using their imported student ID and chooses their own name, email, and password. Existing users are skipped, and duplicate rows in an upload are rejected.

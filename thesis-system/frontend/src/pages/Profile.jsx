@@ -519,7 +519,7 @@ function ResumeTabContent({ resumeName, resumeUploadedAt, resumeError, isUploadi
         {resumeError && <p className="mt-3 text-sm text-[#A32D24]" role="alert">{resumeError}</p>}
 
         <div className="mt-4">
-          <input type="file" accept=".pdf,.doc,.docx" onChange={onUpload} className="hidden" id="resume-upload" disabled={isUploading} />
+          <input type="file" accept=".pdf,application/pdf" onChange={onUpload} className="hidden" id="resume-upload" disabled={isUploading} />
           <label
             htmlFor="resume-upload"
             className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-[18px] border border-[#5B1E13] bg-transparent px-5 py-4 text-base font-semibold text-[#5B1E13] transition hover:bg-[#F7E7C2]"
@@ -610,18 +610,14 @@ function Profile() {
     if (!file) return;
 
     const extension = file.name.split(".").pop()?.toLowerCase();
-    if (!extension || !["pdf", "doc", "docx"].includes(extension) || file.size > 5 * 1024 * 1024) {
-      setResumeError("Choose a PDF, DOC, or DOCX file under 5 MB.");
+    if (extension !== "pdf" || file.size > 5 * 1024 * 1024) {
+      setResumeError("Choose a PDF file under 5 MB.");
       event.target.value = "";
       return;
     }
 
     const header = new Uint8Array(await file.slice(0, 8).arrayBuffer());
-    const isValidSignature = extension === "pdf"
-      ? String.fromCharCode(...header.slice(0, 5)) === "%PDF-"
-      : extension === "doc"
-        ? [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1].every((byte, index) => header[index] === byte)
-        : header[0] === 0x50 && header[1] === 0x4b && header[2] === 0x03 && header[3] === 0x04;
+    const isValidSignature = String.fromCharCode(...header.slice(0, 5)) === "%PDF-";
 
     if (!isValidSignature) {
       setResumeError("The selected file does not match its file type.");

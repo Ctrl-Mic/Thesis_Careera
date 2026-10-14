@@ -2,6 +2,8 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { normalizeEmail } from "../services/authService.js";
 import { getAuthUserId } from "../services/sessionService.js";
+import { fetchAndStoreJobs } from "../services/jobFetchService.js";
+import { importJobListings } from "../services/jobListingImportService.js";
 
 const router = Router();
 const studentIdPattern = /^PDM-20\d{2}-\d{6}$/;
@@ -40,6 +42,38 @@ router.get("/admin/users", requireAdmin, async (_request, response) => {
   });
 
   return response.json({ success: true, users });
+});
+
+router.post("/admin/jobs/fetch", requireAdmin, async (request, response) => {
+  const keywords = request.body?.keywords;
+  const location = request.body?.location;
+  if (
+    typeof keywords !== "string"
+    || !keywords.trim()
+    || typeof location !== "string"
+    || !location.trim()
+  ) {
+    return response.status(400).json({
+      success: false,
+      message: "keywords and location must be non-empty strings.",
+    });
+  }
+
+  const result = await fetchAndStoreJobs({ keywords, location });
+  return response.json({ success: true, ...result });
+});
+
+router.post("/admin/job-listings/import", requireAdmin, async (request, response) => {
+  const listings = request.body?.listings;
+  if (!Array.isArray(listings) || listings.length === 0 || listings.length > maxImportRows) {
+    return response.status(400).json({
+      success: false,
+      message: `Upload a file containing between 1 and ${maxImportRows} job listings.`,
+    });
+  }
+
+  const result = await importJobListings(listings);
+  return response.status(200).json({ success: true, ...result });
 });
 
 router.post("/admin/users/import", requireAdmin, async (request, response) => {

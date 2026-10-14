@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { readSheet } from "read-excel-file/browser";
 import writeExcelFile from "write-excel-file/browser";
 import Navbar from "../components/Navbar";
+import { parseListingCsv } from "../services/listingCsv";
 
 const maxFileSize = 5 * 1024 * 1024;
 const acceptedStudentId = /^PDM-20\d{2}-\d{6}$/;
@@ -58,11 +59,24 @@ function parseImportFile(file) {
 export default function AdminTools() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const listingCsvInputRef = useRef(null);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [activeTab, setActiveTab] = useState("users");
+  const [listingCsvFile, setListingCsvFile] = useState(null);
+  const [isListingImporting, setIsListingImporting] = useState(false);
+  const [listingImportReport, setListingImportReport] = useState(null);
+  const [listingForm, setListingForm] = useState({
+    title: "",
+    company: "",
+    location: "",
+    description: "",
+    listing_type: "job",
+    external_url: "",
+  });
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const isAdmin = window.localStorage.getItem("careerera_is_admin") === "true";
@@ -169,6 +183,94 @@ export default function AdminTools() {
     }
   }
 
+  async function postListings(listings) {
+    const response = await fetch("/api/admin/job-listings/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ listings }),
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Unable to import job listings.");
+    }
+
+    setListingImportReport(result);
+    return result;
+  }
+
+  async function importListingCsv() {
+    if (!listingCsvFile) {
+      setError("Choose a CSV file to import.");
+      return;
+    }
+    if (listingCsvFile.size > maxFileSize) {
+      setError("The CSV file must be smaller than 5 MB.");
+      return;
+    }
+
+    setIsListingImporting(true);
+    setError("");
+    setNotice("");
+    setListingImportReport(null);
+
+    try {
+      const listings = parseListingCsv(await listingCsvFile.text());
+      await postListings(listings);
+      setListingCsvFile(null);
+      if (listingCsvInputRef.current) listingCsvInputRef.current.value = "";
+    } catch (importError) {
+      setError(importError.message || "Unable to import job listings.");
+    } finally {
+      setIsListingImporting(false);
+    }
+  }
+
+  async function addSingleListing(event) {
+    event.preventDefault();
+    setIsListingImporting(true);
+    setError("");
+    setNotice("");
+    setListingImportReport(null);
+
+    try {
+      const result = await postListings([listingForm]);
+      if (result.rejected.length === 0) {
+        setListingForm({
+          title: "",
+          company: "",
+          location: "",
+          description: "",
+          listing_type: "job",
+          external_url: "",
+        });
+      }
+    } catch (submitError) {
+      setError(submitError.message || "Unable to add the job listing.");
+    } finally {
+      setIsListingImporting(false);
+    }
+  }
+
+  const listingReport = listingImportReport && (
+    <div className="developer-tools-listing-report" role="status">
+      <p>
+        {listingImportReport.inserted} inserted · {listingImportReport.updated} updated ·{" "}
+        {listingImportReport.rejected.length} rejected
+      </p>
+      {listingImportReport.rejected.length > 0 && (
+        <ul>
+          {listingImportReport.rejected.map(({ row, reason }) => (
+            <li key={`${row}-${reason}`}>Row {row}: {reason}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+
   return (
     <Navbar>
       <div className="dashboard-heading">
@@ -176,32 +278,73 @@ export default function AdminTools() {
           <p className="dashboard-eyebrow">CAREERA / ADMINISTRATION</p>
           <h1>Developer tools</h1>
           <p className="dashboard-subtitle">
-            View student accounts and manage bulk user imports.
+            Manage student accounts and job listings.
           </p>
         </div>
-        <div className="developer-tools-actions">
-          <button className="dashboard-assessment-link" type="button" onClick={exportUsers}>
-            Export table
-          </button>
-          <button
-            className="dashboard-assessment-link developer-tools-import-button"
-            type="button"
-            onClick={() => {
-              setError("");
-              setSelectedFile(null);
-              if (fileInputRef.current) fileInputRef.current.value = "";
-              setIsImportOpen(true);
-            }}
-          >
-            Import Excel
-          </button>
-        </div>
+        {activeTab === "users" && (
+          <div className="developer-tools-actions">
+            <button className="dashboard-assessment-link" type="button" onClick={exportUsers}>
+              Export table
+            </button>
+            <button
+              className="dashboard-assessment-link developer-tools-import-button"
+              type="button"
+              onClick={() => {
+                setError("");
+                setSelectedFile(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+                setIsImportOpen(true);
+              }}
+            >
+              Import Excel
+            </button>
+          </div>
+        )}
       </div>
 
       {error && <p className="developer-tools-message error" role="alert">{error}</p>}
       {notice && <p className="developer-tools-message" role="status">{notice}</p>}
 
-      <section className="developer-tools-card" aria-labelledby="users-heading">
+      <div className="developer-tools-tabs" role="tablist" aria-label="Admin tools">
+        <button
+          id="users-tab"
+          className={activeTab === "users" ? "developer-tools-tab active" : "developer-tools-tab"}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "users"}
+          aria-controls="users-panel"
+          onClick={() => {
+            setActiveTab("users");
+            setError("");
+            setNotice("");
+          }}
+        >
+          Users
+        </button>
+        <button
+          id="listings-tab"
+          className={activeTab === "listings" ? "developer-tools-tab active" : "developer-tools-tab"}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "listings"}
+          aria-controls="listings-panel"
+          onClick={() => {
+            setActiveTab("listings");
+            setError("");
+            setNotice("");
+          }}
+        >
+          Job listings
+        </button>
+      </div>
+
+      {activeTab === "users" && (
+        <section
+          className="developer-tools-card"
+          id="users-panel"
+          role="tabpanel"
+          aria-labelledby="users-tab"
+        >
         <div className="developer-tools-card-heading">
           <div>
             <h2 id="users-heading">Users</h2>
@@ -235,7 +378,130 @@ export default function AdminTools() {
             </table>
           </div>
         )}
-      </section>
+        </section>
+      )}
+
+      {activeTab === "listings" && (
+        <div id="listings-panel" role="tabpanel" aria-labelledby="listings-tab">
+          {listingReport}
+          <section className="developer-tools-card" aria-labelledby="listing-import-heading">
+            <div className="developer-tools-card-heading">
+              <div>
+                <h2 id="listing-import-heading">Import job listings from CSV</h2>
+                <p>
+                  CSV columns: title, company, location, description, listing_type, external_url.
+                  Listing type must be job or practicum.
+                </p>
+              </div>
+            </div>
+            <div className="developer-tools-listing-content">
+              <label className="developer-tools-file-label" htmlFor="job-listings-csv">
+                CSV file (.csv)
+              </label>
+              <input
+                ref={listingCsvInputRef}
+                id="job-listings-csv"
+                type="file"
+                accept=".csv,text/csv"
+                onChange={(event) => {
+                  setListingCsvFile(event.target.files?.[0] ?? null);
+                  setError("");
+                  setListingImportReport(null);
+                }}
+              />
+              {listingCsvFile && (
+                <p className="developer-tools-selected-file">{listingCsvFile.name}</p>
+              )}
+              <button
+                className="dashboard-assessment-link"
+                type="button"
+                onClick={importListingCsv}
+                disabled={isListingImporting}
+              >
+                {isListingImporting ? "Importing…" : "Import listings"}
+              </button>
+            </div>
+          </section>
+
+          <section className="developer-tools-card developer-tools-listing-form-card">
+            <div className="developer-tools-card-heading">
+              <div>
+                <h2 id="add-listing-heading">Add one listing</h2>
+                <p>Manually add or update a listing using its external URL.</p>
+              </div>
+            </div>
+            <form className="developer-tools-listing-content" onSubmit={addSingleListing}>
+              <div className="developer-tools-listing-form">
+                <label>
+                  Title
+                  <input
+                    name="title"
+                    value={listingForm.title}
+                    onChange={(event) => setListingForm({ ...listingForm, title: event.target.value })}
+                    required
+                  />
+                </label>
+                <label>
+                  Company
+                  <input
+                    name="company"
+                    value={listingForm.company}
+                    onChange={(event) => setListingForm({ ...listingForm, company: event.target.value })}
+                    required
+                  />
+                </label>
+                <label>
+                  Location
+                  <input
+                    name="location"
+                    value={listingForm.location}
+                    onChange={(event) => setListingForm({ ...listingForm, location: event.target.value })}
+                    required
+                  />
+                </label>
+                <label>
+                  Listing type
+                  <select
+                    name="listing_type"
+                    value={listingForm.listing_type}
+                    onChange={(event) => setListingForm({ ...listingForm, listing_type: event.target.value })}
+                  >
+                    <option value="job">Job</option>
+                    <option value="practicum">Practicum</option>
+                  </select>
+                </label>
+                <label className="developer-tools-listing-description">
+                  Description
+                  <textarea
+                    name="description"
+                    value={listingForm.description}
+                    onChange={(event) => setListingForm({ ...listingForm, description: event.target.value })}
+                    rows="4"
+                    required
+                  />
+                </label>
+                <label className="developer-tools-listing-url">
+                  External URL
+                  <input
+                    name="external_url"
+                    type="url"
+                    value={listingForm.external_url}
+                    onChange={(event) => setListingForm({ ...listingForm, external_url: event.target.value })}
+                    required
+                  />
+                </label>
+              </div>
+              <button
+                className="dashboard-assessment-link"
+                type="submit"
+                disabled={isListingImporting}
+              >
+                {isListingImporting ? "Saving…" : "Save listing"}
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
 
       {isImportOpen && (
         <div

@@ -1,0 +1,73 @@
+skill_id,canonical_skill,synonyms,assessment_category
+TS001,Customer Service,customer care; client service; guest service,Customer and Personal Service
+TS002,Guest Relations,guest engagement; visitor relations; guest assistance,Customer and Personal Service
+TS003,Complaint Handling,grievance resolution; guest complaint resolution,Customer and Personal Service
+TS004,Customer Needs Assessment,identifying guest needs; service needs analysis,Customer and Personal Service
+TS005,Service Recovery,resolving service failures; restoring guest satisfaction,Customer and Personal Service
+TS006,Verbal Communication,oral communication; spoken communication,Speaking
+TS007,Public Speaking,presentations; speech delivery; public address,Speaking
+TS008,Tour Commentary,tour narration; destination commentary; sightseeing narration,Speaking
+TS009,Business Writing,professional correspondence; workplace writing,Writing
+TS010,Report Writing,incident reports; operational reports; written reporting,Writing
+TS011,Foreign Language Communication,multilingual communication; second-language communication,Foreign Language
+TS012,Cross-Cultural Communication,intercultural communication; communicating across cultures,Sociology and Anthropology
+TS013,Travel Assistance,travel support; traveler assistance,Helping People
+TS014,Itinerary Planning,travel itinerary development; tour scheduling,Helping People
+TS015,Travel Arrangement Coordination,transportation coordination; travel logistics,Helping People
+TS016,Accessibility Assistance,assisting travelers with disabilities; accessible travel support,Helping People
+TS017,Visitor Information Services,tourist information; visitor guidance,Helping People
+TS018,Tourism Product Sales,tour sales; travel package sales,Sales and Marketing
+TS019,Tour Package Promotion,package marketing; holiday package promotion,Sales and Marketing
+TS020,Destination Marketing,destination promotion; tourism destination advertising,Sales and Marketing
+TS021,Digital Tourism Marketing,online travel marketing; tourism social media marketing,Sales and Marketing
+TS022,Market Research,tourism market research; visitor demand research,Sales and Marketing
+TS023,Sales Negotiation,negotiating package prices; commercial negotiation,Negotiation
+TS024,Supplier Negotiation,vendor negotiation; supplier rate negotiation,Negotiation
+TS025,Time Management,time allocation; schedule management,Time Management
+TS026,Tour Scheduling,excursion scheduling; guided tour scheduling,Time Management
+TS027,Reservation Coordination,booking coordination; reservation scheduling,Time Management
+TS028,Multitasking,concurrent task handling; managing multiple duties,Time Management
+TS029,Operational Planning,service planning; tourism operations planning,Operations Analysis
+TS030,Resource Allocation,personnel allocation; operational resource planning,Management of Financial Resources
+TS031,Workflow Analysis,process analysis; service workflow evaluation,Operations Analysis
+TS032,Problem Solving,issue resolution; practical problem resolution,Complex Problem Solving
+TS033,Travel Disruption Management,itinerary disruption resolution; delay management,Complex Problem Solving
+TS034,Decision-Making,operational decisions; selecting appropriate actions,Complex Problem Solving
+TS035,Reservation Management,booking management; reservation processing,Clerical
+TS036,Booking Documentation,reservation records; booking paperwork,Clerical
+TS037,Record Keeping,document filing; records maintenance,Clerical
+TS038,Data Entry,encoding; information entry,Clerical
+TS039,Travel Documentation Processing,travel paperwork; itinerary documentation,Clerical
+TS040,Appointment Coordination,appointment scheduling; meeting coordination,Clerical
+TS041,Office Productivity Software,word processing; spreadsheet and presentation software,Computers and Electronics
+TS042,Computerized Reservation Systems,CRS; reservation software,Computers and Electronics
+TS043,Global Distribution Systems,GDS; travel distribution platforms,Computers and Electronics
+TS044,Online Booking Platforms,online reservation systems; booking websites,Computers and Electronics
+TS045,Digital Communication Tools,email platforms; online meeting tools,Computers and Electronics
+TS046,Budget Preparation,budget planning; expenditure planning,Management of Financial Resources
+TS047,Tour Costing,package costing; tour price calculation,Economics and Accounting
+TS048,Expense Monitoring,expenditure tracking; expense control,Management of Financial Resources
+TS049,Billing and Invoicing,invoice preparation; customer billing,Economics and Accounting
+TS050,Cash Handling,payment processing; cash transactions,Economics and Accounting
+TS051,Financial Record Keeping,bookkeeping; transaction recording,Economics and Accounting
+TS052,Cultural Awareness,cultural sensitivity; cultural understanding,Sociology and Anthropology
+TS053,Local Customs Knowledge,knowledge of local traditions; customary practices,Sociology and Anthropology
+TS054,Heritage Interpretation,cultural heritage interpretation; heritage explanation,Sociology and Anthropology
+TS055,Destination Knowledge,destination familiarity; local attraction knowledge,Sociology and Anthropology
+TS056,Visitor Behavior Awareness,tourist behavior understanding; visitor behavior analysis,Sociology and Anthropology
+TS057,Guest Safety Awareness,visitor safety; tourist safety precautions,Public Safety and Security
+TS058,Emergency Response,emergency assistance; incident response,Public Safety and Security
+TS059,Risk Identification,hazard identification; safety risk recognition,Public Safety and Security
+TS060,Safety Procedure Compliance,safety protocol compliance; following safety guidelines,Public Safety and Security
+TS061,Incident Reporting,accident reporting; security incident documentation,Public Safety and Security
+TS062,Tour Guiding,guided tours; tourist guiding,Instructing
+TS063,Visitor Orientation,guest orientation; visitor briefing,Instructing
+TS064,Destination Interpretation,explaining attractions; interpreting destination features,Instructing
+TS065,Group Facilitation,managing visitor groups; facilitating group activities,Instructing
+TS066,Instructional Presentation,explaining procedures; demonstrating activities,Instructing
+TS067,Service Quality Monitoring,service inspection; quality monitoring,Monitoring
+TS068,Booking Accuracy Verification,reservation checking; booking validation,Monitoring
+TS069,Tour Progress Monitoring,itinerary tracking; excursion progress tracking,Monitoring
+TS070,Supplier Coordination,vendor coordination; tourism partner coordination,Operations Analysis
+TS071,Staff Coordination,team coordination; personnel coordination,Operations Analysis
+TS072,Service Performance Evaluation,service assessment; operational performance review,Monitoring

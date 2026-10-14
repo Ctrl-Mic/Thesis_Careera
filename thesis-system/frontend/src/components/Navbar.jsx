@@ -59,6 +59,12 @@ function Icon({ name, size = 18, className = "" }) {
         <path d="m16 16 4.5 4.5" />
       </svg>
     ),
+    assessment: (
+      <svg {...commonProps}>
+        <path d="M8 4.5h8a2 2 0 0 1 2 2V21H6V6.5a2 2 0 0 1 2-2Z" />
+        <path d="M9 3h6v3H9zM9 11h6M9 15h6" />
+      </svg>
+    ),
     bell: (
       <svg {...commonProps}>
         <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
@@ -72,6 +78,7 @@ function Icon({ name, size = 18, className = "" }) {
 
 const sidebarItems = [
   { label: "Home", to: "/home", icon: "home" },
+  { label: "Assessment", to: "/assessment", icon: "assessment" },
   { label: "Profile", to: "/profile", icon: "user" },
   { label: "Saved", to: "/saved", icon: "bookmark" },
   { label: "Settings", to: "/home#completeness", icon: "settings" },
@@ -90,9 +97,11 @@ export default function Navbar({ children, searchText = "", onSearchChange = () 
     ? "Developer Tools"
     : pathname === "/profile"
       ? "Profile"
-      : pathname === "/saved"
-        ? "Saved"
-        : sectionMap[hash] ?? "Home";
+      : pathname === "/assessment"
+        ? "Assessment"
+        : pathname === "/saved"
+          ? "Saved"
+          : sectionMap[hash] ?? "Home";
 
   return (
     <div className="dashboard-app">

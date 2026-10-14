@@ -1,0 +1,55 @@
+{
+  "success": true,
+  "jobCount": 5,
+  "jobs": [
+    {
+      "id": 78901,
+      "jobTitle": "Hotel Front Desk Associate",
+      "companyName": "Harbor Hotel",
+      "jobGeo": "Cebu City",
+      "jobDescription": "Guest services, reservations, and check-in support.",
+      "jobExcerpt": "Guest services and check-in.",
+      "jobType": ["Full-time", "On-site"],
+      "salary": "PHP 25,000-30,000",
+      "url": "https://jobs.example.test/78901",
+      "pubDate": "2026-10-10T08:30:00Z",
+      "jobLevel": "Mid-level"
+    },
+    {
+      "id": "tour-guide-02",
+      "jobTitle": "Tour Guide",
+      "companyName": "Island Tours",
+      "jobGeo": "Palawan",
+      "jobExcerpt": "Lead guided tours and explain local history.",
+      "jobType": "Contract",
+      "salary": "Negotiable",
+      "url": "https://jobs.example.test/tour-guide-02",
+      "pubDate": "not-a-date"
+    },
+    {
+      "jobTitle": "Reservation Assistant",
+      "jobGeo": "Manila",
+      "jobDescription": "Support reservations by phone and email.",
+      "url": "https://jobs.example.test/reservation-assistant"
+    },
+    {
+      "id": "guest-relations-04",
+      "jobTitle": "Guest Relations Specialist",
+      "companyName": "Blue Cove Resort",
+      "jobGeo": "Boracay",
+      "jobDescription": "Welcome resort guests and resolve service concerns.",
+      "jobType": ["Full-time"],
+      "salary": "PHP 28,000 monthly",
+      "url": "https://jobs.example.test/guest-relations-04",
+      "pubDate": "2026-10-12"
+    },
+    {
+      "jobTitle": "Event Coordinator",
+      "companyName": "Manila Events Group",
+      "jobGeo": "Manila",
+      "jobExcerpt": "Plan tourism and hospitality events.",
+      "jobType": ["Part-time"],
+      "salary": 1800
+    }
+  ]
+}
