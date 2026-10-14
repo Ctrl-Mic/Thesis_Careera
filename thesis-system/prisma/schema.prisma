@@ -9,11 +9,17 @@ datasource db {
 
 model User {
   id           String       @id @default(uuid()) @db.Uuid
-  fullName     String       @map("full_name")
-  email        String       @unique
-  passwordHash String       @map("password_hash")
+  fullName     String?      @map("full_name")
+  email        String?      @unique
+  passwordHash String?      @map("password_hash")
+  studentId    String?      @map("student_id")
+  isAdmin      Boolean      @default(false) @map("is_admin")
+  isVerified   Boolean      @default(true) @map("is_verified")
   createdAt    DateTime     @default(now()) @map("created_at")
-  assessments  Assessment[]
+  assessments        Assessment[]
+  assessmentAttempts AssessmentAttempt[]
+  skillProfiles      UserSkillProfile[]
+  recommendations   Recommendation[]
 
   @@map("users")
 }
@@ -26,4 +32,137 @@ model Assessment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("assessments")
+}
+
+model Profile {
+  profileId        Int      @id @default(autoincrement()) @map("profile_id")
+  userId           String?  @map("user_id")
+  academic_program String?  @db.VarChar(100)
+  skills           String?
+  certifications   String?
+  experience       String?
+  career_preference String? @db.VarChar(100)
+  resumeFile       Bytes?   @map("resume_file") @db.ByteA
+  resumeText       Json?    @map("resume_text") @db.JsonB
+  resumeFileLegacy String?  @map("resume_file_legacy") @db.VarChar(255)
+  resumeFileName   String?  @map("resume_file_name")
+  resumeMimeType   String?  @map("resume_mime_type")
+  resumeUploadedAt DateTime? @map("resume_uploaded_at")
+  portfolio_file   String?  @db.VarChar(255)
+  certificates_file String? @db.VarChar(255)
+
+  @@map("profile")
+}
+
+model SkillDictionary {
+  skillId           String   @id @map("skill_id") @db.VarChar(5)
+  canonicalSkill    String?  @map("canonical_skill") @db.VarChar(100)
+  synonyms          String?
+  assessmentCategory String? @map("assessment_category") @db.VarChar(100)
+  skillProfiles     UserSkillProfile[]
+  listingSkills     ListingSkill[]
+  idf               SkillIdf?
+
+  @@map("skills_dictionary")
+}
+
+model AssessmentAttempt {
+  attemptId String             @id @map("attempt_id") @db.Uuid
+  userId    String             @map("user_id") @db.Uuid
+  takenAt   DateTime           @default(now()) @map("taken_at") @db.Timestamp(3)
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers   AssessmentAnswer[]
+
+  @@index([userId])
+  @@map("assessment_attempt")
+}
+
+model AssessmentAnswer {
+  attemptId String            @map("attempt_id") @db.Uuid
+  category  String
+  level     Int               @db.SmallInt
+  attempt   AssessmentAttempt @relation(fields: [attemptId], references: [attemptId], onDelete: Cascade)
+
+  @@id([attemptId, category])
+  @@map("assessment_answer")
+}
+
+model UserSkillProfile {
+  userId           String          @map("user_id") @db.Uuid
+  skillId          String          @map("skill_id") @db.VarChar(5)
+  assessmentWeight Float           @default(0) @map("assessment_weight") @db.Real
+  inResume         Boolean         @default(false) @map("in_resume")
+  inCertificate    Boolean         @default(false) @map("in_certificate")
+  finalWeight      Float           @default(0) @map("final_weight") @db.Real
+  updatedAt        DateTime        @map("updated_at") @db.Timestamp(3)
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill            SkillDictionary @relation(fields: [skillId], references: [skillId], onDelete: Restrict)
+
+  @@id([userId, skillId])
+  @@index([skillId])
+  @@map("user_skill_profile")
+}
+
+model JobListing {
+  listingId    Int             @id @default(autoincrement()) @map("listing_id")
+  source       String
+  externalId   String?         @map("external_id")
+  title        String
+  company      String?
+  location     String?
+  description  String?
+  jobType      String?         @map("job_type")
+  listingType  String          @default("job") @map("listing_type")
+  salary       String?
+  externalUrl  String?         @map("external_url")
+  postedAt     DateTime?       @map("posted_at") @db.Timestamp(3)
+  fetchedAt    DateTime        @default(now()) @map("fetched_at") @db.Timestamp(3)
+  rawPayload   Json?           @map("raw_payload") @db.JsonB
+  isActive     Boolean         @default(true) @map("is_active")
+  listingSkills ListingSkill[]
+  recommendations Recommendation[]
+
+  @@unique([source, externalId])
+  @@index([listingType])
+  @@index([isActive])
+  @@index([location])
+  @@map("job_listings")
+}
+
+model ListingSkill {
+  listingId Int             @map("listing_id")
+  skillId   String          @map("skill_id") @db.VarChar(5)
+  termCount Int             @map("term_count")
+  tfidf     Float           @db.Real
+  listing   JobListing      @relation(fields: [listingId], references: [listingId], onDelete: Cascade)
+  skill     SkillDictionary @relation(fields: [skillId], references: [skillId], onDelete: Restrict)
+
+  @@id([listingId, skillId])
+  @@index([skillId])
+  @@map("listing_skill")
+}
+
+model SkillIdf {
+  skillId    String          @id @map("skill_id") @db.VarChar(5)
+  docFreq    Int             @map("doc_freq")
+  idf        Float           @db.Real
+  computedAt DateTime        @map("computed_at") @db.Timestamp(3)
+  skill      SkillDictionary @relation(fields: [skillId], references: [skillId], onDelete: Restrict)
+
+  @@map("skill_idf")
+}
+
+model Recommendation {
+  userId       String     @map("user_id") @db.Uuid
+  listingId    Int        @map("listing_id")
+  matchScore   Float      @map("match_score") @db.Real
+  readinessPct Float?     @map("readiness_pct") @db.Real
+  gaps         Json       @db.JsonB
+  computedAt   DateTime   @map("computed_at") @db.Timestamp(3)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing      JobListing @relation(fields: [listingId], references: [listingId], onDelete: Cascade)
+
+  @@id([userId, listingId])
+  @@index([listingId])
+  @@map("recommendation")
 }

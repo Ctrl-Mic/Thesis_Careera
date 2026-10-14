@@ -1,0 +1,165 @@
+CAREERA — TRIMMED TOURISM-RELEVANT ASSESSMENT
+Source instrument: CareerOneStop Skills Matcher
+Note: Selected categories only. Original questions and available anchors are retained verbatim. Basic and Advanced anchors are blank in the supplied source.
+
+1. Customer and Personal Service
+Question: How well do you know how to handle customer needs and resolve service problems?
+No experience:
+Beginner: Process a dry-cleaning order
+Basic: 
+Skilled: Supervise 10 children at a day care
+Advanced: 
+Expert: Plan customer outreach after data privacy breach
+
+2. Speaking
+Question: How well do you convey information when you speak?
+No experience:
+Beginner: Greet customers
+Basic: 
+Skilled: Interview applicants to obtain personal and work history
+Advanced: 
+Expert: Argue a legal case before the Supreme Court
+
+3. Writing
+Question: How well does your writing effectively communicate to an audience's particular need?
+No experience:
+Beginner: Take a telephone message
+Basic: 
+Skilled: Write a memo to staff outlining new directives
+Advanced: 
+Expert: Write a technical manual
+
+4. Foreign Language
+Question: How well do you know a foreign language?
+No experience:
+Beginner: Say "please" and "thank you"
+Basic: 
+Skilled: Ask directions in a foreign city
+Advanced: 
+Expert: Critique a literary book
+
+5. Helping People
+Question: How good are you at understanding how to help people?
+No experience:
+Beginner: Ask clients if they would like coffee
+Basic: 
+Skilled: Make travel arrangements for customers
+Advanced: 
+Expert: Direct relief operations in a disaster area
+
+6. Sales and Marketing
+Question: How well can you perform marketing strategies and tactics?
+No experience:
+Beginner: Sell cakes at a bake sale
+Basic: 
+Skilled: Call a list of clients to introduce them to a new product line
+Advanced: 
+Expert: Develop a marketing plan for a large firm
+
+7. Time Management
+Question: How well do you manage your and others' time?
+No experience:
+Beginner: Keep a monthly appointment calendar
+Basic: 
+Skilled: Allocate staff time to projects for the coming week
+Advanced: 
+Expert: Allocate scientists' time to multiple, multi-stage projects
+
+8. Complex Problem Solving
+Question: How good are you at figuring out the best way to solve a problem?
+No experience:
+Beginner: Gather tools for a household job
+Basic: 
+Skilled: Redesign a floor plan around new equipment
+Advanced: 
+Expert: Develop a local disaster response plan
+
+9. Monitoring
+Question: How well can you assess your or others' work?
+No experience:
+Beginner: Proofread a letter
+Basic: 
+Skilled: Make adjustments to a meeting to ensure key goals are met
+Advanced: 
+Expert: Measure and plan to increase a firm's productivity
+
+10. Clerical
+Question: How much do you know about administrative tasks and processes?
+No experience:
+Beginner: File forms
+Basic: 
+Skilled: Type 30 words per minute
+Advanced: 
+Expert: Design an online office-wide storage system
+
+11. Computers and Electronics
+Question: How effective are you at using electronic equipment?
+No experience:
+Beginner: Open a program on a computer
+Basic: 
+Skilled: Use a word processor
+Advanced: 
+Expert: Create a virus-scanning program
+
+12. Management of Financial Resources
+Question: What level of financial decision-maker are you?
+No experience:
+Beginner: Record office supply purchases
+Basic: 
+Skilled: Prepare and manage a budget for a short-term project
+Advanced: 
+Expert: Oversee yearly budgets for a large firm
+
+13. Economics and Accounting
+Question: How well do you know banking and financial systems?
+No experience:
+Beginner: Answer billing questions
+Basic: 
+Skilled: Develop an investment plan for clients
+Advanced: 
+Expert: Oversee a large firm's finances
+
+14. Sociology and Anthropology
+Question: How well do you know the theories of group behavior, societal trends and influences, and human culture?
+No experience:
+Beginner: Identify two different cultures
+Basic: 
+Skilled: Write an article about cultural differences
+Advanced: 
+Expert: Create a new theory of civilization's development
+
+15. Public Safety and Security
+Question: How well do you know the equipment, policies, procedures, and strategies used to promote security operations?
+No experience:
+Beginner: Follow work safety guidelines
+Basic: 
+Skilled: Inspect a building site for safety violations
+Advanced: 
+Expert: Command a military operation
+
+16. Instructing
+Question: How skilled are you at teaching people how to do something?
+No experience:
+Beginner: Show someone how to bowl
+Basic: 
+Skilled: Instruct a coworker in how to operate a software program
+Advanced: 
+Expert: Demonstrate surgery to interns
+
+17. Operations Analysis
+Question: How well can you analyze needs and requirements, then make a plan that meets them?
+No experience:
+Beginner: Select a copy machine for the office
+Basic: 
+Skilled: Suggest software changes to make a system more user friendly
+Advanced: 
+Expert: Identify system needs for a new process production plant
+
+18. Negotiation
+Question: How well can you persuade others to see different points of view or compromise?
+No experience:
+Beginner: Justify a new work schedule to your manager
+Basic:
+Skilled: Contract with a wholesaler to sell items at a given cost
+Advanced:
+Expert: Negotiate a foreign treaty as an ambassador
