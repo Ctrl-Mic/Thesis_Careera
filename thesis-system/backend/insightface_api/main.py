@@ -17,7 +17,7 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel
 
 
-load_dotenv(Path(__file__).resolve().parents[2] / ".env.local")
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_IMAGE_PIXELS = 20_000_000
