@@ -4,6 +4,7 @@ import path from "node:path";
 import { PDFParse } from "pdf-parse";
 import prisma from "../lib/prisma.js";
 import { normalizeEmail } from "../services/authService.js";
+import { getAuthUserId } from "../services/sessionService.js";
 import { findSkillMatches } from "../services/skillMatcher.js";
 import { replaceUserSkillEvidence } from "../services/skillProfileService.js";
 
@@ -44,11 +45,38 @@ async function extractResumeText(content) {
   }
 }
 
-async function findUserByEmail(email) {
-  const normalizedEmail = normalizeEmail(email);
-  if (!normalizedEmail) return null;
+async function requireProfileUser(request, response, next) {
+  const authorization = request.get("authorization") ?? "";
+  const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+  const userId = getAuthUserId(token);
+  if (!userId) {
+    return response.status(401).json({ success: false, message: "Sign in to continue." });
+  }
 
-  return prisma.user.findUnique({ where: { email: normalizedEmail } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, fullName: true },
+  });
+  if (!user) {
+    return response.status(401).json({ success: false, message: "Your account could not be found." });
+  }
+
+  request.profileUser = user;
+  return next();
+}
+
+function hasMatchingEmail(request, response) {
+  const requestedEmail = request.method === "POST"
+    ? request.body?.email
+    : request.query.email;
+  if (
+    typeof requestedEmail !== "string"
+    || normalizeEmail(requestedEmail) !== normalizeEmail(request.profileUser.email)
+  ) {
+    response.status(403).json({ success: false, message: "You can only access your own profile." });
+    return false;
+  }
+  return true;
 }
 
 async function updateResumeEvidence(userId, text) {
@@ -59,11 +87,9 @@ async function updateResumeEvidence(userId, text) {
   return replaceUserSkillEvidence(userId, matches.keys(), "resume");
 }
 
-router.get("/profile", async (request, response) => {
-  const user = await findUserByEmail(request.query.email);
-  if (!user) {
-    return response.status(404).json({ success: false, message: "User not found." });
-  }
+router.get("/profile", requireProfileUser, async (request, response) => {
+  if (!hasMatchingEmail(request, response)) return undefined;
+  const user = request.profileUser;
 
   const profile = await prisma.profile.findFirst({
     where: { userId: user.id },
@@ -83,11 +109,9 @@ router.get("/profile", async (request, response) => {
   });
 });
 
-router.post("/profile/resume", async (request, response) => {
-  const user = await findUserByEmail(request.body?.email);
-  if (!user) {
-    return response.status(404).json({ success: false, message: "User not found." });
-  }
+router.post("/profile/resume", requireProfileUser, async (request, response) => {
+  if (!hasMatchingEmail(request, response)) return undefined;
+  const user = request.profileUser;
 
   const { fileName, contentBase64 } = request.body ?? {};
   const resume = getResumeContent(fileName, contentBase64);
@@ -153,11 +177,9 @@ router.post("/profile/resume", async (request, response) => {
   });
 });
 
-router.get("/profile/resume", async (request, response) => {
-  const user = await findUserByEmail(request.query.email);
-  if (!user) {
-    return response.status(404).json({ success: false, message: "User not found." });
-  }
+router.get("/profile/resume", requireProfileUser, async (request, response) => {
+  if (!hasMatchingEmail(request, response)) return undefined;
+  const user = request.profileUser;
 
   const profile = await prisma.profile.findFirst({
     where: { userId: user.id },
@@ -174,11 +196,9 @@ router.get("/profile/resume", async (request, response) => {
   return response.send(profile.resumeFile);
 });
 
-router.delete("/profile/resume", async (request, response) => {
-  const user = await findUserByEmail(request.query.email);
-  if (!user) {
-    return response.status(404).json({ success: false, message: "User not found." });
-  }
+router.delete("/profile/resume", requireProfileUser, async (request, response) => {
+  if (!hasMatchingEmail(request, response)) return undefined;
+  const user = request.profileUser;
 
   await prisma.profile.updateMany({
     where: { userId: user.id },

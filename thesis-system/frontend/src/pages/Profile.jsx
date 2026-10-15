@@ -569,6 +569,7 @@ function Profile() {
   const [profile, setProfile] = useState(initialProfile);
   const [resume, setResume] = useState(null);
   const [accountEmail] = useState(() => window.localStorage.getItem("careerera_current_account") ?? "");
+  const token = window.localStorage.getItem("careerera_auth_token");
   const [profileError, setProfileError] = useState(() => accountEmail ? "" : "Sign in to view your profile.");
   const [resumeError, setResumeError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -579,7 +580,9 @@ function Profile() {
 
     async function loadProfile() {
       try {
-        const response = await fetch(`/api/profile?email=${encodeURIComponent(accountEmail)}`);
+        const response = await fetch(`/api/profile?email=${encodeURIComponent(accountEmail)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || "Unable to load your profile.");
 
@@ -598,7 +601,7 @@ function Profile() {
     }
 
     loadProfile();
-  }, [accountEmail]);
+  }, [accountEmail, token]);
 
   function handleProfileChange(event) {
     const { name, value } = event.target;
@@ -636,7 +639,10 @@ function Profile() {
       });
       const response = await fetch("/api/profile/resume", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           email: accountEmail,
           fileName: file.name,
@@ -658,7 +664,10 @@ function Profile() {
   async function handleDeleteResume() {
     setResumeError("");
     try {
-      const response = await fetch(`/api/profile/resume?email=${encodeURIComponent(accountEmail)}`, { method: "DELETE" });
+      const response = await fetch(`/api/profile/resume?email=${encodeURIComponent(accountEmail)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "Unable to delete resume.");
       setResume(null);
@@ -669,7 +678,9 @@ function Profile() {
 
   async function handleDownloadResume() {
     try {
-      const response = await fetch(`/api/profile/resume?email=${encodeURIComponent(accountEmail)}`);
+      const response = await fetch(`/api/profile/resume?email=${encodeURIComponent(accountEmail)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok) {
         const result = await response.json();
         throw new Error(result.message || "Unable to download resume.");

@@ -9,6 +9,7 @@ import process from "node:process";
 import test from "node:test";
 import prisma from "../lib/prisma.js";
 import profileRouter from "../routes/profile.js";
+import { createAuthToken } from "../services/sessionService.js";
 import { extractSkills } from "../services/skillMatcher.js";
 
 loadEnv({ path: path.resolve(process.cwd(), ".env.local") });
@@ -72,9 +73,13 @@ test("resume uploads replace resume evidence and refresh final weights", {
     const address = server.address();
     assert.ok(address && typeof address !== "string");
     const endpoint = `http://127.0.0.1:${address.port}/api/profile/resume`;
+    const token = createAuthToken(userId);
     const uploadContent = async (content, fileName) => fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         email,
         fileName,
