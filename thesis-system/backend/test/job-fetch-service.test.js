@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { fetchAndStoreJobs, mapJobicyJob } from "../services/jobFetchService.js";
+import { DEFAULT_JOB_KEYWORDS, DEFAULT_JOB_LOCATION, DEFAULT_JOB_RESULT_LIMIT, JOB_FETCH_DELAY_MS } from "../config/jobFetchConfig.js";
+import {
+  fetchAllConfiguredJobs,
+  fetchAndStoreJobs,
+  mapJobicyJob,
+} from "../services/jobFetchService.js";
 
 const fixture = JSON.parse(await readFile(
   new URL("./fixtures/jobicy-jobs.json", import.meta.url),
@@ -106,6 +111,128 @@ test("reports a vector rebuild failure after saving fetched listings", async () 
     ),
   );
   assert.equal(database.records.size, 5);
+});
+
+test("refreshes all configured keywords with one vector rebuild and idempotent upserts", async () => {
+  const database = createMockDatabase();
+  const { fetchImpl, requests } = createMockFetch();
+  const delays = [];
+  let rebuildCount = 0;
+  const dependencies = {
+    database,
+    fetchImpl,
+    wait: async (milliseconds) => delays.push(milliseconds),
+    rebuildVectors: async ({ database: rebuildDatabase }) => {
+      assert.equal(rebuildDatabase, database);
+      assert.equal(database.records.size, 5);
+      rebuildCount += 1;
+      return { listingCount: database.records.size };
+    },
+  };
+
+  assert.deepEqual(await fetchAllConfiguredJobs(dependencies), {
+    fetched: DEFAULT_JOB_KEYWORDS.length * fixture.jobs.length,
+    inserted: fixture.jobs.length,
+    updated: (DEFAULT_JOB_KEYWORDS.length - 1) * fixture.jobs.length,
+    listingVectors: { listingCount: fixture.jobs.length },
+  });
+  assert.deepEqual(await fetchAllConfiguredJobs(dependencies), {
+    fetched: DEFAULT_JOB_KEYWORDS.length * fixture.jobs.length,
+    inserted: 0,
+    updated: DEFAULT_JOB_KEYWORDS.length * fixture.jobs.length,
+    listingVectors: { listingCount: fixture.jobs.length },
+  });
+  assert.equal(requests.length, DEFAULT_JOB_KEYWORDS.length * 2);
+  assert.deepEqual(
+    requests.slice(0, DEFAULT_JOB_KEYWORDS.length).map(({ url }) => [
+      url.searchParams.get("tag"),
+      url.searchParams.get("geo"),
+      url.searchParams.get("count"),
+    ]),
+    DEFAULT_JOB_KEYWORDS.map((keyword) => [
+      keyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      DEFAULT_JOB_LOCATION,
+      String(DEFAULT_JOB_RESULT_LIMIT),
+    ]),
+  );
+  assert.equal(delays.length, (DEFAULT_JOB_KEYWORDS.length - 1) * 2);
+  assert.ok(delays.every((milliseconds) => milliseconds === JOB_FETCH_DELAY_MS));
+  assert.equal(rebuildCount, 2);
+  assert.equal(database.records.size, fixture.jobs.length);
+});
+
+test("does not rebuild listing vectors when the first configured keyword fetch fails", async () => {
+  const database = createMockDatabase();
+  let rebuildCount = 0;
+
+  await assert.rejects(
+    fetchAllConfiguredJobs({
+      database,
+      fetchImpl: async () => new Response("", { status: 503 }),
+      wait: async () => {
+        throw new Error("delay should not run before the first request succeeds");
+      },
+      rebuildVectors: async () => {
+        rebuildCount += 1;
+        return { listingCount: 0 };
+      },
+    }),
+    /Jobicy API error: 503/,
+  );
+  assert.equal(database.records.size, 0);
+  assert.equal(rebuildCount, 0);
+});
+
+test("reports a vector rebuild failure after refreshing configured keywords", async () => {
+  const database = createMockDatabase();
+  const { fetchImpl } = createMockFetch();
+
+  await assert.rejects(
+    fetchAllConfiguredJobs({
+      database,
+      fetchImpl,
+      wait: async () => undefined,
+      rebuildVectors: async () => {
+        throw new Error("database unavailable");
+      },
+    }),
+    (error) => (
+      error.message === "Jobs were saved, but rebuilding listing skill vectors failed."
+      && error.cause?.message === "database unavailable"
+    ),
+  );
+  assert.equal(database.records.size, fixture.jobs.length);
+});
+
+test("rebuilds vectors for saved jobs before reporting a later category fetch failure", async () => {
+  const database = createMockDatabase();
+  const delays = [];
+  let requestCount = 0;
+  let rebuildCount = 0;
+  const fetchImpl = async () => {
+    requestCount += 1;
+    if (requestCount === 1) {
+      return new Response(JSON.stringify(fixture), { status: 200 });
+    }
+    return new Response("", { status: 503 });
+  };
+
+  await assert.rejects(
+    fetchAllConfiguredJobs({
+      database,
+      fetchImpl,
+      wait: async (milliseconds) => delays.push(milliseconds),
+      rebuildVectors: async () => {
+        rebuildCount += 1;
+        return { listingCount: database.records.size };
+      },
+    }),
+    /Jobicy API error: 503/,
+  );
+  assert.equal(requestCount, 2);
+  assert.deepEqual(delays, [JOB_FETCH_DELAY_MS]);
+  assert.equal(database.records.size, fixture.jobs.length);
+  assert.equal(rebuildCount, 1);
 });
 
 test("maps Jobicy fields, longest description, and stable IDs with nullable fields", () => {

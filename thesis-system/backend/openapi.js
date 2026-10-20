@@ -217,9 +217,30 @@ const spec = {
     },
     "/api/admin/jobs/fetch": {
       post: {
-        tags: ["Administration"], summary: "Fetch and persist Jobicy listings", operationId: "fetchAdminJobs",
-        description: "Admin-only server-side import. It is separate from, and does not replace, the frontend's direct Jobicy search.", security: bearer,
-        requestBody: jsonBody("FetchJobsRequest", { keywords: "hotel receptionist", location: "Philippines" }),
+        tags: ["Administration"], summary: "Fetch and refresh Jobicy listings", operationId: "fetchAdminJobs",
+        description: "Admin-only server-side import. Provide keywords and location for one fetch, or refreshAll: true to fetch every configured keyword, location, and result limit. Refresh-all requests wait the configured delay between keywords and rebuild listing vectors once.",
+        security: bearer,
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                oneOf: [
+                  { $ref: "#/components/schemas/FetchJobsRequest" },
+                  {
+                    type: "object",
+                    required: ["refreshAll"],
+                    properties: { refreshAll: { type: "boolean", enum: [true] } },
+                  },
+                ],
+              },
+              examples: {
+                oneKeyword: { value: { keywords: "hotel receptionist", location: "Philippines" } },
+                allConfiguredKeywords: { value: { refreshAll: true } },
+              },
+            },
+          },
+        },
         responses: {
           "200": jsonResponse("Listings fetched and stored.", "FetchJobsResponse", { success: true, fetched: 1, inserted: 1, updated: 0, listingVectors: { listingCount: 1, zeroMatchedListingCount: 0, averageTextLength: 140, minimumTextLength: 140, listingSkillCount: 2, skillIdfCount: 10 } }),
           "400": errorRef("BadRequest"), "401": errorRef("Unauthorized"), "403": errorRef("Forbidden"), "500": errorRef("InternalServerError"),

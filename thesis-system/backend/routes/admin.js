@@ -2,7 +2,7 @@ import { Router } from "express";
 import prisma from "../lib/prisma.js";
 import { normalizeEmail } from "../services/authService.js";
 import { getAuthUserId } from "../services/sessionService.js";
-import { fetchAndStoreJobs } from "../services/jobFetchService.js";
+import { fetchAllConfiguredJobs, fetchAndStoreJobs } from "../services/jobFetchService.js";
 import { importJobListings } from "../services/jobListingImportService.js";
 
 const router = Router();
@@ -45,6 +45,20 @@ router.get("/admin/users", requireAdmin, async (_request, response) => {
 });
 
 router.post("/admin/jobs/fetch", requireAdmin, async (request, response) => {
+  if (request.body?.refreshAll === true) {
+    try {
+      const result = await fetchAllConfiguredJobs();
+      return response.json({ success: true, ...result });
+    } catch (error) {
+      return response.status(500).json({
+        success: false,
+        message: error instanceof Error && error.message
+          ? error.message
+          : "Unable to refresh job listings. Check the backend service and try again.",
+      });
+    }
+  }
+
   const keywords = request.body?.keywords;
   const location = request.body?.location;
   if (

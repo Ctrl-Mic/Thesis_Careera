@@ -148,8 +148,12 @@ npm run fetch:jobs -- --all-defaults
 ```
 
 An authenticated admin can trigger one search with `POST /api/admin/jobs/fetch`
-and a JSON body containing non-empty `keywords` and `location` strings. After
-the listings are saved, their skill vectors and dictionary IDF values are
+and a JSON body containing non-empty `keywords` and `location` strings, or
+refresh every configured keyword with `{ "refreshAll": true }`. Refresh-all
+requests use the same location, result limit, and delay as `--all-defaults`,
+upsert listings by source and external ID, and rebuild listing skill vectors
+once after the keyword requests finish. After listings are saved from a
+single-keyword fetch, their skill vectors and dictionary IDF values are
 rebuilt automatically. To rebuild the vectors manually and print listing
 diagnostics, run:
 
@@ -157,17 +161,25 @@ diagnostics, run:
 npm run rebuild:listings
 ```
 
-### Admin CSV import for job listings
+### Admin CSV import and Jobicy refresh for job listings
 
-In **Developer tools → Job listings**, admins can import a CSV file or add one
-listing with the form. The CSV header must include `title`, `company`,
-`location`, `description`, `listing_type`, and `external_url`. Every value is
-required; `listing_type` must be `job` or `practicum`, and `external_url` must
-be an HTTP or HTTPS URL. Rows are validated independently. The result reports
-inserted, updated, and rejected counts with a row number and reason for each
-rejection. Re-importing a manual listing with the same external URL updates it.
-Imported listings use source `manual`, and listing skill vectors are rebuilt
-after every import.
+In **Developer tools → Job listings**, admins can refresh stored Jobicy
+listings, import a CSV file, or add one listing with the form.
+
+**Refresh Job Listings** calls the authenticated `POST /api/admin/jobs/fetch`
+refresh-all endpoint. It fetches every configured tourism keyword from Jobicy,
+inserts new listings or updates existing ones, then rebuilds listing skill
+vectors so recommendations keep using the latest data. The button is disabled
+while a refresh or import is running. A successful refresh reports fetched,
+inserted, and updated counts.
+
+The CSV header must include `title`, `company`, `location`, `description`,
+`listing_type`, and `external_url`. Every value is required; `listing_type`
+must be `job` or `practicum`, and `external_url` must be an HTTP or HTTPS URL.
+Rows are validated independently. The result reports inserted, updated, and
+rejected counts with a row number and reason for each rejection. Re-importing
+a manual listing with the same external URL updates it. Imported listings use
+source `manual`, and listing skill vectors are rebuilt after every import.
 
 Example `job-listings.csv`:
 
@@ -295,7 +307,7 @@ Saved opportunities are stored locally for the current account and can be revisi
 The app includes profile and navigation pages to support the overall student career portal experience. Uploading a text-based PDF resume stores its extracted text, matches it against the skills dictionary, and refreshes the user's resume evidence and final skill weights. Run `node scripts/match-skills.js <userId>` from `thesis-system` to inspect matched skills, terms, and occurrence counts. Certificate upload is not implemented yet; the evidence updater supports adding certificate evidence when that flow is introduced.
 
 ### Admin Developer Tools
-Users whose `is_admin` value is true see **Developer Tools** under Help. The page lists user names, student IDs, and emails, and can export the table to Excel. Admins can also import `.xlsx` files with `name`, `student_id`, and `email` columns; only `student_id` is required. New imported records have no name, email, or password until the student registers using their imported student ID and chooses their own name, email, and password. Existing users are skipped, and duplicate rows in an upload are rejected.
+Users whose `is_admin` value is true see **Developer Tools** under Help. The Users tab lists user names, student IDs, and emails, and can export the table to Excel. Admins can also import `.xlsx` files with `name`, `student_id`, and `email` columns; only `student_id` is required. New imported records have no name, email, or password until the student registers using their imported student ID and chooses their own name, email, and password. Existing users are skipped, and duplicate rows in an upload are rejected. The Job listings tab can refresh Jobicy listings into PostgreSQL, import a CSV, or add one listing manually.
 
 ## Notes
 

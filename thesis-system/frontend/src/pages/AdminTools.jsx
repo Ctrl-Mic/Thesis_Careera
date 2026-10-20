@@ -68,6 +68,7 @@ export default function AdminTools() {
   const [activeTab, setActiveTab] = useState("users");
   const [listingCsvFile, setListingCsvFile] = useState(null);
   const [isListingImporting, setIsListingImporting] = useState(false);
+  const [isRefreshingJobs, setIsRefreshingJobs] = useState(false);
   const [listingImportReport, setListingImportReport] = useState(null);
   const [listingForm, setListingForm] = useState({
     title: "",
@@ -226,6 +227,43 @@ export default function AdminTools() {
       setError(importError.message || "Unable to import job listings.");
     } finally {
       setIsListingImporting(false);
+    }
+  }
+
+  async function refreshJobListings() {
+    setIsRefreshingJobs(true);
+    setError("");
+    setNotice("");
+    setListingImportReport(null);
+
+    try {
+      const response = await fetch("/api/admin/jobs/fetch", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ refreshAll: true }),
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (response.status === 401 || response.status === 403) {
+        window.localStorage.removeItem("careerera_is_admin");
+        window.localStorage.removeItem("careerera_auth_token");
+        navigate("/home", { replace: true });
+        return;
+      }
+      if (!response.ok || result.success !== true) {
+        throw new Error(result.message || "Unable to refresh job listings.");
+      }
+
+      setNotice(
+        `Refresh completed: ${result.fetched} fetched, ${result.inserted} inserted, ${result.updated} updated.`,
+      );
+    } catch (refreshError) {
+      setError(refreshError.message || "Unable to refresh job listings.");
+    } finally {
+      setIsRefreshingJobs(false);
     }
   }
 
@@ -395,6 +433,14 @@ export default function AdminTools() {
               </div>
             </div>
             <div className="developer-tools-listing-content">
+              <button
+                className="dashboard-assessment-link"
+                type="button"
+                onClick={refreshJobListings}
+                disabled={isListingImporting || isRefreshingJobs}
+              >
+                {isRefreshingJobs ? "Refreshing…" : "Refresh Job Listings"}
+              </button>
               <label className="developer-tools-file-label" htmlFor="job-listings-csv">
                 CSV file (.csv)
               </label>
@@ -403,6 +449,7 @@ export default function AdminTools() {
                 id="job-listings-csv"
                 type="file"
                 accept=".csv,text/csv"
+                disabled={isListingImporting || isRefreshingJobs}
                 onChange={(event) => {
                   setListingCsvFile(event.target.files?.[0] ?? null);
                   setError("");
@@ -416,7 +463,7 @@ export default function AdminTools() {
                 className="dashboard-assessment-link"
                 type="button"
                 onClick={importListingCsv}
-                disabled={isListingImporting}
+                disabled={isListingImporting || isRefreshingJobs}
               >
                 {isListingImporting ? "Importing…" : "Import listings"}
               </button>
@@ -494,7 +541,7 @@ export default function AdminTools() {
               <button
                 className="dashboard-assessment-link"
                 type="submit"
-                disabled={isListingImporting}
+                disabled={isListingImporting || isRefreshingJobs}
               >
                 {isListingImporting ? "Saving…" : "Save listing"}
               </button>

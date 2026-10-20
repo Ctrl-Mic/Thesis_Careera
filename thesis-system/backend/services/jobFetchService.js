@@ -1,6 +1,11 @@
 import { createHash } from "node:crypto";
 import prisma from "../lib/prisma.js";
-import { DEFAULT_JOB_RESULT_LIMIT } from "../config/jobFetchConfig.js";
+import {
+  DEFAULT_JOB_KEYWORDS,
+  DEFAULT_JOB_LOCATION,
+  DEFAULT_JOB_RESULT_LIMIT,
+  JOB_FETCH_DELAY_MS,
+} from "../config/jobFetchConfig.js";
 import { rebuildListingVectors } from "./listingVectorService.js";
 
 const JOBICY_API_URL = "https://jobicy.com/api/v2/remote-jobs";
@@ -158,4 +163,59 @@ export async function fetchAndStoreJobs(
     });
   }
   return { fetched: data.jobs.length, inserted, updated, listingVectors };
+}
+
+export async function fetchAllConfiguredJobs(
+  {
+    fetchImpl = fetch,
+    database = prisma,
+    rebuildVectors = rebuildListingVectors,
+    wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
+  } = {},
+) {
+  const totals = { fetched: 0, inserted: 0, updated: 0 };
+  let requestCount = 0;
+  let fetchError;
+
+  try {
+    for (const keywords of DEFAULT_JOB_KEYWORDS) {
+      if (requestCount > 0) await wait(JOB_FETCH_DELAY_MS);
+      const result = await fetchAndStoreJobs(
+        { keywords, location: DEFAULT_JOB_LOCATION },
+        {
+          fetchImpl,
+          database,
+          rebuildVectors: async () => undefined,
+          resultLimit: DEFAULT_JOB_RESULT_LIMIT,
+        },
+      );
+      requestCount += 1;
+      totals.fetched += result.fetched;
+      totals.inserted += result.inserted;
+      totals.updated += result.updated;
+    }
+  } catch (error) {
+    fetchError = error;
+  }
+
+  let listingVectors;
+  if (requestCount > 0) {
+    try {
+      listingVectors = await rebuildVectors({ database });
+    } catch (error) {
+      if (fetchError) {
+        throw new AggregateError(
+          [fetchError, error],
+          "Job refresh failed and rebuilding listing skill vectors also failed.",
+          { cause: error },
+        );
+      }
+      throw new Error("Jobs were saved, but rebuilding listing skill vectors failed.", {
+        cause: error,
+      });
+    }
+  }
+
+  if (fetchError) throw fetchError;
+  return { ...totals, listingVectors };
 }
