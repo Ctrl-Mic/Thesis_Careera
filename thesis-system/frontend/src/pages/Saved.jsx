@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../components/Navbar";
-import { getJobs } from "../services/jobicyApi";
+import { getJobListings } from "../services/jobListingsApi";
 import { getSavedJobsForAccount, persistSavedJobs } from "../services/savedJobs";
 
 function formatRelativeTime(savedAt, now) {
@@ -36,18 +36,16 @@ function formatRelativeTime(savedAt, now) {
 
 function Saved() {
   const [jobs, setJobs] = useState([]);
-  const [savedJobs, setSavedJobs] = useState([]);
+  const [savedJobs, setSavedJobs] = useState(() => getSavedJobsForAccount());
   const [searchText, setSearchText] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
-    setSavedJobs(getSavedJobsForAccount());
-  }, []);
-
-  useEffect(() => {
-    const intervalId = window.setInterval(() => setNow(Date.now()), 30000);
+    const updateNow = () => setNow(Date.now());
+    updateNow();
+    const intervalId = window.setInterval(updateNow, 30000);
     return () => window.clearInterval(intervalId);
   }, []);
 
@@ -56,7 +54,7 @@ function Saved() {
 
     async function loadJobs() {
       try {
-        const fetchedJobs = await getJobs();
+        const fetchedJobs = await getJobListings({ limit: 100 });
         if (isMounted) {
           setJobs(fetchedJobs);
         }
@@ -121,7 +119,8 @@ function Saved() {
           <div className="saved-list">
             {filteredJobs.map((job) => {
               const savedEntry = savedJobs.find((entry) => String(entry.id) === String(job.id));
-              const savedAt = savedEntry?.savedAt ?? Date.now();
+              const savedAt = savedEntry?.savedAt ?? 0;
+              const relativeTime = formatRelativeTime(savedAt, now || savedAt);
 
               return (
                 <article key={job.id} className="saved-card">
@@ -163,7 +162,7 @@ function Saved() {
                   </div>
 
                   <div className="saved-card-footer">
-                    <span className="saved-time"><Icon name="clock" /> {formatRelativeTime(savedAt, now)}</span>
+                    <span className="saved-time"><Icon name="clock" /> {relativeTime}</span>
                     <div className="saved-card-actions">
                       <button type="button" className="saved-secondary-button" onClick={() => handleRemove(job.id)}>
                         Remove

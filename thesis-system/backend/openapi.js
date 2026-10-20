@@ -190,6 +190,21 @@ const spec = {
         },
       },
     },
+    "/api/job-listings": {
+      get: {
+        tags: ["Recommendations"], summary: "List active database-backed job and practicum listings", operationId: "getJobListings",
+        description: "Returns the current active listings from PostgreSQL, including manually entered and imported records, without fetching the live external Jobicy API on the frontend.",
+        parameters: [
+          { name: "limit", in: "query", description: "Positive result count; defaults to 50.", schema: { type: "integer", minimum: 1, default: 50 }, example: 20 },
+          { name: "location", in: "query", description: "Optional location substring.", schema: { type: "string" }, example: "Cebu" },
+          { name: "type", in: "query", description: "Optional listing type.", schema: { type: "string", enum: ["job", "practicum"] } },
+        ],
+        responses: {
+          "200": jsonResponse("Active listings returned.", "JobListingsResponse", { success: true, jobs: [{ id: 1, title: "Front Desk Associate", company: "Sample Hotel", location: "Manila", employmentType: "Full-time", workType: "Remote", skills: ["Customer service"], summary: "Guest services.", url: "https://example.test/jobs/front-desk", logo: "", listingType: "job", source: "manual" }] }),
+          "400": errorRef("BadRequest"), "500": errorRef("InternalServerError"),
+        },
+      },
+    },
     "/api/admin/users": {
       get: {
         tags: ["Administration"], summary: "List user directory fields", operationId: "listAdminUsers",
@@ -274,6 +289,8 @@ const spec = {
       AssessmentSubmitResponse: { type: "object", required: ["success", "attempt_id"], properties: { success: { type: "boolean", enum: [true] }, attempt_id: { type: "string", format: "uuid" }, warning: { type: "string" } } },
       RecommendationsResponse: { oneOf: [{ type: "object", required: ["results"], properties: { results: { type: "array", items: { $ref: "#/components/schemas/Recommendation" } } } }, { type: "object", required: ["code", "results"], properties: { code: { type: "string", enum: ["NO_PROFILE"] }, results: { type: "array", maxItems: 0, items: { type: "object" } } } }] },
       Recommendation: { type: "object", required: ["listing_id", "title", "company", "location", "external_url", "match_score", "match_percent", "readiness_pct", "gaps"], properties: { listing_id: { type: "integer" }, title: { type: "string" }, company: { type: "string", nullable: true }, location: { type: "string", nullable: true }, external_url: { type: "string", format: "uri", nullable: true }, match_score: { type: "number" }, match_percent: { type: "integer" }, readiness_pct: { type: "number", nullable: true }, gaps: { type: "array", items: { type: "object", required: ["skill_id", "name", "listing_weight", "user_weight"], properties: { skill_id: { type: "string" }, name: { type: "string" }, listing_weight: { type: "number" }, user_weight: { type: "number" } } } } } },
+      JobListingsResponse: { type: "object", required: ["success", "jobs"], properties: { success: { type: "boolean", enum: [true] }, jobs: { type: "array", items: { $ref: "#/components/schemas/JobListingSummary" } } } },
+      JobListingSummary: { type: "object", required: ["id", "title", "company", "location", "employmentType", "workType", "skills", "summary", "url", "logo", "listingType", "source"], properties: { id: { type: "integer" }, title: { type: "string" }, company: { type: "string" }, location: { type: "string" }, employmentType: { type: "string" }, workType: { type: "string" }, skills: { type: "array", items: { type: "string" } }, summary: { type: "string" }, url: { type: "string", format: "uri" }, logo: { type: "string", nullable: true }, listingType: { type: "string", enum: ["job", "practicum"] }, source: { type: "string" } } },
       AdminUsersResponse: { type: "object", required: ["success", "users"], properties: { success: { type: "boolean", enum: [true] }, users: { type: "array", items: { type: "object", properties: { fullName: { type: "string", nullable: true }, studentId: { type: "string", nullable: true }, email: { type: "string", format: "email", nullable: true } } } } } },
       FetchJobsRequest: { type: "object", required: ["keywords", "location"], properties: { keywords: { type: "string", minLength: 1 }, location: { type: "string", minLength: 1 } } },
       ListingVectorReport: { type: "object", properties: { listingCount: { type: "integer" }, zeroMatchedListingCount: { type: "integer" }, averageTextLength: { type: "number", nullable: true }, minimumTextLength: { type: "integer", nullable: true }, topFrequentSkills: { type: "array", items: { type: "object" } }, skillsWithoutListings: { type: "array", items: { type: "object" } }, listingSkillCount: { type: "integer" }, skillIdfCount: { type: "integer" } } },

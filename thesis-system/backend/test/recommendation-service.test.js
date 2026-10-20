@@ -5,6 +5,7 @@ import express from "express";
 import process from "node:process";
 import test from "node:test";
 import prisma from "../lib/prisma.js";
+import { createJobListingsRouter } from "../routes/jobListings.js";
 import { createRecommendationsRouter } from "../routes/recommendations.js";
 import { cosine, computeRecommendations } from "../services/recommendationService.js";
 import { createAuthToken } from "../services/sessionService.js";
@@ -237,6 +238,96 @@ test("authenticated recommendations endpoint returns NO_PROFILE with HTTP 200", 
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { code: "NO_PROFILE", results: [] });
+});
+
+test("job listings endpoint returns active database listings in a frontend-friendly shape", async (context) => {
+  const database = {
+    jobListing: {
+      async findMany({ where, orderBy, select }) {
+        assert.equal(where.isActive, true);
+        assert.equal(orderBy[0].fetchedAt, "desc");
+        assert.equal(select.listingId, true);
+        return [
+          {
+            listingId: 7,
+            title: "Tour Guide",
+            company: "Island Tours",
+            location: "Cebu",
+            listingType: "job",
+            externalUrl: "https://example.com/guides/cebu",
+            description: "Lead city tours.",
+            jobType: "Full-time",
+            salary: "₱25,000",
+            source: "manual",
+            listingSkills: [{ skill: { canonicalSkill: "Tourism" } }],
+          },
+          {
+            listingId: 8,
+            title: "Practicum Program",
+            company: "Hotel Academy",
+            location: "Manila",
+            listingType: "practicum",
+            externalUrl: "https://example.com/practicum",
+            description: "Hands-on learning.",
+            jobType: null,
+            salary: null,
+            source: "manual",
+            listingSkills: [{ skill: { canonicalSkill: "Hospitality" } }],
+          },
+        ];
+      },
+    },
+  };
+
+  const app = express();
+  app.use("/api", createJobListingsRouter({ database }));
+  const server = app.listen(0, "127.0.0.1");
+  context.after(() => new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  }));
+  await new Promise((resolve, reject) => {
+    server.once("listening", resolve);
+    server.once("error", reject);
+  });
+
+  const address = server.address();
+  assert.ok(address && typeof address !== "string");
+  const response = await fetch(`http://127.0.0.1:${address.port}/api/job-listings`);
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    success: true,
+    jobs: [
+      {
+        id: 7,
+        title: "Tour Guide",
+        company: "Island Tours",
+        location: "Cebu",
+        employmentType: "Full-time",
+        workType: "Remote",
+        skills: ["Tourism"],
+        summary: "Lead city tours.",
+        url: "https://example.com/guides/cebu",
+        logo: "",
+        listingType: "job",
+        source: "manual",
+      },
+      {
+        id: 8,
+        title: "Practicum Program",
+        company: "Hotel Academy",
+        location: "Manila",
+        employmentType: "Not specified",
+        workType: "Remote",
+        skills: ["Hospitality"],
+        summary: "Hands-on learning.",
+        url: "https://example.com/practicum",
+        logo: "",
+        listingType: "practicum",
+        source: "manual",
+      },
+    ],
+  });
 });
 
 test("recommendations endpoint requires a valid signed-in user", async (context) => {

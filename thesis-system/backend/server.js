@@ -10,6 +10,7 @@ import adminRouter from "./routes/admin.js";
 import verificationRouter from "./routes/verification.js";
 import assessmentRouter from "./routes/assessment.js";
 import recommendationsRouter from "./routes/recommendations.js";
+import jobListingsRouter from "./routes/jobListings.js";
 import openApiSpec from "./openapi.js";
 
 loadEnv({ path: path.resolve(process.cwd(), ".env.local") });
@@ -36,6 +37,7 @@ app.use("/api", adminRouter);
 app.use("/api", verificationRouter);
 app.use("/api", assessmentRouter);
 app.use("/api", recommendationsRouter);
+app.use("/api", jobListingsRouter);
 
 app.get("/health", (_request, response) => {
   response.json({ status: "ok" });

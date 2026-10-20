@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import { getJobs } from "../services/jobicyApi";
+import { getJobListings } from "../services/jobListingsApi";
 import { getSavedJobsForAccount, persistSavedJobs } from "../services/savedJobs";
 
 const insights = [
@@ -30,44 +30,85 @@ const insights = [
 
 function Home() {
   const [jobs, setJobs] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [savedJobs, setSavedJobs] = useState(() => getSavedJobsForAccount().map((entry) => entry.id));
   const [selectedInsight, setSelectedInsight] = useState("");
   const [selectedJob, setSelectedJob] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loadingJobs, setLoadingJobs] = useState(true);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+  const [jobsError, setJobsError] = useState("");
+  const [recommendationError, setRecommendationError] = useState("");
   const [notice, setNotice] = useState("");
+  const token = window.localStorage.getItem("careerera_auth_token");
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadJobs() {
       try {
-        setLoading(true);
-        setError("");
-        const fetchedJobs = await getJobs(searchText);
+        setLoadingJobs(true);
+        setJobsError("");
+        const fetchedJobs = await getJobListings({ limit: 30 });
         if (isMounted) {
           setJobs(fetchedJobs);
         }
       } catch (fetchError) {
         if (isMounted) {
-          setError(fetchError.message || "Unable to load jobs right now.");
           setJobs([]);
+          setJobsError(fetchError.message || "Unable to load job listings right now.");
         }
       } finally {
         if (isMounted) {
-          setLoading(false);
+          setLoadingJobs(false);
         }
       }
     }
 
-    const debounceTimer = window.setTimeout(loadJobs, 500);
+    async function loadRecommendations() {
+      if (!token) {
+        if (isMounted) {
+          setRecommendations([]);
+          setRecommendationError("Sign in to view personalized career matches.");
+          setLoadingRecommendations(false);
+        }
+        return;
+      }
+
+      try {
+        setLoadingRecommendations(true);
+        setRecommendationError("");
+        const response = await fetch("/api/recommendations?limit=3", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+
+        if (!response.ok || result.success === false) {
+          throw new Error(result.message || "Unable to load recommendations.");
+        }
+
+        if (isMounted) {
+          setRecommendations(result.results ?? []);
+        }
+      } catch (fetchError) {
+        if (isMounted) {
+          setRecommendations([]);
+          setRecommendationError(fetchError.message || "Unable to load recommendations right now.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingRecommendations(false);
+        }
+      }
+    }
+
+    loadJobs();
+    loadRecommendations();
 
     return () => {
       isMounted = false;
-      window.clearTimeout(debounceTimer);
     };
-  }, [searchText]);
+  }, [token]);
 
   const searchTerm = searchText.trim().toLowerCase();
   const filteredJobs = useMemo(
@@ -82,8 +123,24 @@ function Home() {
     [jobs, searchTerm]
   );
 
-  const recommendation = filteredJobs[0] ?? null;
-  const browseJobs = filteredJobs.slice(1);
+  const recommendationCards = recommendations
+    .filter(({ title, company, location }) => !searchTerm || [title, company, location].join(" ").toLowerCase().includes(searchTerm))
+    .slice(0, 3)
+    .map((recommendation) => ({
+      id: recommendation.listing_id,
+      title: recommendation.title,
+      company: recommendation.company || "Unknown company",
+      location: recommendation.location || "Remote",
+      employmentType: recommendation.readiness_pct == null ? "Career match" : `Readiness ${recommendation.readiness_pct}%`,
+      workType: recommendation.gaps?.length ? "Assessment-based" : "Career match",
+      salary: recommendation.match_percent ? `${recommendation.match_percent}% match` : "Assessment-based",
+      skills: (recommendation.gaps || []).slice(0, 3).map(({ name }) => name),
+      summary: `Match score ${recommendation.match_percent}%${recommendation.readiness_pct == null ? "" : ` · readiness ${recommendation.readiness_pct}%`}`,
+      url: recommendation.external_url || "#",
+      logo: "",
+      listingType: "recommended",
+    }));
+  const browseJobs = filteredJobs;
 
   function toggleSaved(jobId) {
     setSavedJobs((currentSaved) => {
@@ -137,24 +194,29 @@ function Home() {
             <div className="dashboard-section-heading">
               <div>
                 <h2>Recommended Career</h2>
-                <p>Live job suggestions from Jobicy.</p>
+                <p>Top 3 assessment matches ranked by your profile.</p>
               </div>
-              <span className="prototype-label">Live data</span>
+              <span className="prototype-label">Top 3</span>
             </div>
 
-            {loading ? (
-              <p className="dashboard-empty-state">Loading opportunities...</p>
-            ) : error ? (
-              <p className="dashboard-empty-state">{error}</p>
-            ) : recommendation ? (
-              <JobCard
-                job={recommendation}
-                isSaved={savedJobs.includes(String(recommendation.id))}
-                onToggleSave={() => toggleSaved(recommendation.id)}
-                onApply={() => openJob(recommendation)}
-              />
+            {loadingRecommendations ? (
+              <p className="dashboard-empty-state">Loading personalized recommendations...</p>
+            ) : recommendationError ? (
+              <p className="dashboard-empty-state">{recommendationError}</p>
+            ) : recommendationCards.length > 0 ? (
+              <div className="opportunity-list">
+                {recommendationCards.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    isSaved={savedJobs.includes(String(job.id))}
+                    onToggleSave={() => toggleSaved(job.id)}
+                    onApply={() => openJob(job)}
+                  />
+                ))}
+              </div>
             ) : (
-              <p className="dashboard-empty-state">No recommendations match “{searchText}”.</p>
+              <p className="dashboard-empty-state">Complete your assessment to unlock your top 3 recommendations.</p>
             )}
           </section>
 
@@ -162,13 +224,13 @@ function Home() {
             <div className="dashboard-section-heading">
               <div>
                 <h2>Browse Opportunities</h2>
-                <p>Explore real remote roles and internships from the API.</p>
+                <p>Explore active job and practicum listings saved in PostgreSQL.</p>
               </div>
-              <span className="prototype-label">Live listings</span>
+              <span className="prototype-label">Database</span>
             </div>
 
             <div className="opportunity-list">
-              {!loading && !error && browseJobs.map((job) => (
+              {!loadingJobs && !jobsError && browseJobs.map((job) => (
                 <JobCard
                   key={job.id}
                   job={job}
@@ -177,9 +239,13 @@ function Home() {
                   onApply={() => openJob(job)}
                 />
               ))}
-              {!loading && !error && browseJobs.length === 0 && (
+              {loadingJobs ? (
+                <p className="dashboard-empty-state">Loading database opportunities...</p>
+              ) : jobsError ? (
+                <p className="dashboard-empty-state">{jobsError}</p>
+              ) : browseJobs.length === 0 ? (
                 <p className="dashboard-empty-state">No opportunities match “{searchText}”.</p>
-              )}
+              ) : null}
             </div>
           </section>
         </div>
@@ -244,7 +310,7 @@ function Home() {
       </div>
 
       <p className="dashboard-disclaimer">
-        Job data is pulled from the live Jobicy remote jobs API for this prototype.
+        Job listings come from the database-backed Career job feed, while assessment results are computed from the authenticated user's profile.
       </p>
 
       <button className="assistant-button" type="button" aria-label="Career assistant prototype">
@@ -312,6 +378,8 @@ function Home() {
 }
 
 function JobCard({ job, isSaved, onToggleSave, onApply }) {
+  const prototypeTag = job.listingType === "recommended" ? "Top match" : "Database";
+
   return (
     <article className="job-card">
       <div className="job-card-topline">
@@ -322,7 +390,7 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
           <span className="job-company">{job.company}</span>
           <h3>{job.title}</h3>
         </div>
-        <span className="job-prototype-tag">Live</span>
+        <span className="job-prototype-tag">{prototypeTag}</span>
       </div>
 
       <p className="job-summary">{job.summary}</p>
