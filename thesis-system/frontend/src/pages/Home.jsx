@@ -28,6 +28,157 @@ const insights = [
   },
 ];
 
+function sanitizeRichText(rawHtml = "") {
+  if (typeof rawHtml !== "string") {
+    return "";
+  }
+
+  const trimmedHtml = rawHtml.trim();
+  if (!trimmedHtml) {
+    return "";
+  }
+
+  const parser = new DOMParser();
+  const document = parser.parseFromString(trimmedHtml, "text/html");
+  const safeTags = new Set([
+    "A",
+    "B",
+    "BLOCKQUOTE",
+    "BR",
+    "CODE",
+    "DIV",
+    "EM",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "HR",
+    "I",
+    "LI",
+    "OL",
+    "P",
+    "PRE",
+    "SPAN",
+    "STRONG",
+    "TABLE",
+    "TBODY",
+    "TD",
+    "TH",
+    "THEAD",
+    "TR",
+    "U",
+    "UL",
+  ]);
+
+  const disallowedTags = new Set([
+    "SCRIPT",
+    "STYLE",
+    "IFRAME",
+    "OBJECT",
+    "EMBED",
+    "SVG",
+    "MATH",
+    "LINK",
+    "META",
+    "BASE",
+    "TEMPLATE",
+    "FORM",
+    "INPUT",
+    "BUTTON",
+    "TEXTAREA",
+    "SELECT",
+  ]);
+
+  document.body.querySelectorAll("*").forEach((node) => {
+    const tagName = node.tagName.toUpperCase();
+
+    if (disallowedTags.has(tagName) || !safeTags.has(tagName)) {
+      const fragment = document.createDocumentFragment();
+      while (node.firstChild) {
+        fragment.appendChild(node.firstChild);
+      }
+      node.replaceWith(fragment);
+      return;
+    }
+
+    if (node.hasAttribute("style")) {
+      node.removeAttribute("style");
+    }
+
+    [...node.attributes].forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      if (!["href", "target", "rel", "title"].includes(name)) {
+        node.removeAttribute(attribute.name);
+      }
+    });
+
+    if (node.tagName.toUpperCase() === "A") {
+      const href = node.getAttribute("href");
+      if (!href || !/^(https?:\/\/|mailto:|\/)/i.test(href)) {
+        node.removeAttribute("href");
+      } else {
+        node.setAttribute("target", "_blank");
+        node.setAttribute("rel", "noopener noreferrer nofollow");
+      }
+    }
+
+    if (node.hasAttribute("onclick")) {
+      node.removeAttribute("onclick");
+    }
+
+    ["onload", "onerror", "onmouseover", "onfocus", "onblur", "onkeydown"].forEach((eventName) => {
+      if (node.hasAttribute(eventName)) {
+        node.removeAttribute(eventName);
+      }
+    });
+  });
+
+  const sanitizedHtml = document.body.innerHTML;
+  return sanitizedHtml.trim();
+}
+
+function stripHtmlToPlainText(rawHtml = "") {
+  if (typeof rawHtml !== "string") {
+    return "";
+  }
+
+  const flattenedHtml = rawHtml.replace(/<br\s*\/?>/gi, "\n");
+  const parser = new DOMParser();
+  const document = parser.parseFromString(flattenedHtml, "text/html");
+  return (document.body?.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
+function buildDescriptionPreview(rawHtml = "", maxLength = 180) {
+  const plainText = stripHtmlToPlainText(rawHtml);
+  if (!plainText) {
+    return "No description available.";
+  }
+
+  if (plainText.length <= maxLength) {
+    return plainText;
+  }
+
+  const trimmed = plainText.slice(0, maxLength).trimEnd();
+  return `${trimmed.slice(0, Math.max(0, trimmed.lastIndexOf(" ") || trimmed.length - 1)).trimEnd()}…`;
+}
+
+function RichText({ html, className = "" }) {
+  const sanitizedHtml = sanitizeRichText(html);
+
+  if (!sanitizedHtml) {
+    return null;
+  }
+
+  return (
+    <div
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+    />
+  );
+}
+
 function Home() {
   const [jobs, setJobs] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
@@ -351,8 +502,8 @@ function Home() {
               </div>
 
               <div className="job-modal-summary">
-                <h4>Job Summary</h4>
-                <p>{selectedJob.summary}</p>
+                <h4>Full Description</h4>
+                <RichText html={selectedJob.summary} className="job-rich-content" />
               </div>
             </div>
 
@@ -379,6 +530,7 @@ function Home() {
 
 function JobCard({ job, isSaved, onToggleSave, onApply }) {
   const prototypeTag = job.listingType === "recommended" ? "Top match" : "Database";
+  const descriptionPreview = buildDescriptionPreview(job.summary || "");
 
   return (
     <article className="job-card">
@@ -393,7 +545,7 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
         <span className="job-prototype-tag">{prototypeTag}</span>
       </div>
 
-      <p className="job-summary">{job.summary}</p>
+      <p className="job-preview">{descriptionPreview}</p>
 
       <div className="job-metadata">
         <span><Icon name="pin" />{job.location}</span>
@@ -415,7 +567,9 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
           >
             <Icon name="bookmark" />
           </button>
-          <button className="apply-button" type="button" onClick={onApply}>View</button>
+          <button className="apply-button job-description-button" type="button" onClick={onApply}>
+            View Description
+          </button>
         </div>
       </div>
     </article>

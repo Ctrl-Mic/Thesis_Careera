@@ -2209,6 +2209,99 @@ button {
   line-height: 1.55;
 }
 
+.job-preview {
+  margin: 0;
+  color: #6f625d;
+  font-size: 14px;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rich-text,
+.job-rich-content {
+  color: #5b4d45;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.rich-text > :first-child,
+.job-rich-content > :first-child {
+  margin-top: 0;
+}
+
+.rich-text > :last-child,
+.job-rich-content > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-text h1,
+.rich-text h2,
+.rich-text h3,
+.rich-text h4,
+.rich-text h5,
+.rich-text h6,
+.job-rich-content h1,
+.job-rich-content h2,
+.job-rich-content h3,
+.job-rich-content h4,
+.job-rich-content h5,
+.job-rich-content h6 {
+  margin: 0.8em 0 0.45em;
+  color: var(--dashboard-brown-dark);
+  line-height: 1.25;
+}
+
+.rich-text p,
+.rich-text li,
+.job-rich-content p,
+.job-rich-content li {
+  margin: 0 0 0.8em;
+}
+
+.rich-text ul,
+.rich-text ol,
+.job-rich-content ul,
+.job-rich-content ol {
+  margin: 0.7em 0 1em 1.2em;
+  padding-left: 1.2em;
+}
+
+.rich-text li,
+.job-rich-content li {
+  margin-bottom: 0.35em;
+}
+
+.rich-text a,
+.job-rich-content a {
+  color: #1f5ab1;
+  text-decoration: underline;
+}
+
+.rich-text strong,
+.rich-text b,
+.job-rich-content strong,
+.job-rich-content b {
+  color: var(--dashboard-brown-dark);
+  font-weight: 700;
+}
+
+.rich-text code,
+.job-rich-content code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+.rich-text blockquote,
+.job-rich-content blockquote {
+  margin: 1em 0;
+  padding-left: 1em;
+  border-left: 3px solid #e6d7b8;
+  color: #67574f;
+}
+
 .job-metadata {
   display: flex;
   flex-wrap: wrap;
@@ -2352,6 +2445,11 @@ button {
 .job-modal-actions .save-job-button {
   display: grid;
   place-items: center;
+}
+
+.job-description-button {
+  min-width: 150px;
+  white-space: nowrap;
 }
 
 .job-skills {

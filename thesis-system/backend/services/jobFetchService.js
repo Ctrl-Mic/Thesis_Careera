@@ -8,7 +8,7 @@ import {
 } from "../config/jobFetchConfig.js";
 import { rebuildListingVectors } from "./listingVectorService.js";
 
-const JOBICY_API_URL = "https://jobicy.com/api/v2/remote-jobs";
+const JOBICY_API_URL = "https://jobicy.com/api/jobs";
 
 function asText(value) {
   if (typeof value === "string") return value.trim() || null;
@@ -103,6 +103,68 @@ async function upsertListing(database, listing) {
   `;
 }
 
+function buildJobicyUrl({ keywords, location, resultLimit, cursor }) {
+  const url = new URL(JOBICY_API_URL);
+  url.searchParams.set("count", String(resultLimit));
+  url.searchParams.set("geo", location.trim().toLowerCase());
+  url.searchParams.set("tag", normalizeSearchTerm(keywords));
+  if (typeof cursor === "string" && cursor.trim()) {
+    url.searchParams.set("cursor", cursor.trim());
+  }
+  return url;
+}
+
+async function fetchJobicyPage({ keywords, location, resultLimit, cursor, fetchImpl }) {
+  const requestUrl = buildJobicyUrl({ keywords, location, resultLimit, cursor });
+  let response;
+  try {
+    response = await fetchImpl(requestUrl, { headers: { Accept: "application/json" } });
+  } catch (error) {
+    throw new Error(`Jobicy API request failed: ${error instanceof Error ? error.message : "network error"}`);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Jobicy API error: ${response.status}`);
+  }
+
+  const responseText = await response.text();
+  if (!responseText || !responseText.trim()) {
+    throw new Error("Jobicy API returned an empty response.");
+  }
+
+  if (/<html|<!doctype|<body|<script/i.test(responseText)) {
+    throw new Error("Jobicy API returned HTML instead of JSON. Verify the endpoint and request parameters; the Jobicy jobs URL must return JSON data, not the homepage.");
+  }
+
+  let data;
+  try {
+    data = JSON.parse(responseText);
+  } catch {
+    throw new Error("Jobicy API returned invalid JSON. Check that the request is hitting the public Jobs API endpoint.");
+  }
+
+  if (!data || typeof data !== "object" || !Array.isArray(data.jobs)) {
+    throw new Error("Jobicy API response did not include a jobs array.");
+  }
+  if (data.success === false) {
+    throw new Error(data.message || "Jobicy API reported an unsuccessful response.");
+  }
+
+  return data;
+}
+
+function defineAliasProperties(target, aliases) {
+  for (const [key, value] of Object.entries(aliases)) {
+    Object.defineProperty(target, key, {
+      value,
+      enumerable: false,
+      configurable: true,
+      writable: true,
+    });
+  }
+  return target;
+}
+
 export async function fetchAndStoreJobs(
   { keywords, location },
   {
@@ -110,6 +172,7 @@ export async function fetchAndStoreJobs(
     database = prisma,
     rebuildVectors = rebuildListingVectors,
     resultLimit = DEFAULT_JOB_RESULT_LIMIT,
+    wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
   } = {},
 ) {
   if (typeof keywords !== "string" || !keywords.trim()) {
@@ -122,37 +185,55 @@ export async function fetchAndStoreJobs(
     throw new Error("resultLimit must be a positive integer.");
   }
 
-  const url = new URL(JOBICY_API_URL);
-  url.searchParams.set("count", String(resultLimit));
-  url.searchParams.set("tag", normalizeSearchTerm(keywords));
-  url.searchParams.set("geo", location.trim());
-
-  let response;
-  try {
-    response = await fetchImpl(url, { headers: { Accept: "application/json" } });
-  } catch {
-    throw new Error("Jobicy API request failed.");
-  }
-
-  if (!response.ok) {
-    throw new Error(`Jobicy API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  if (!data || typeof data !== "object" || !Array.isArray(data.jobs)) {
-    throw new Error("Jobicy API response did not include a jobs array.");
-  }
-  if (data.success === false) {
-    throw new Error(data.message || "Jobicy API reported an unsuccessful response.");
-  }
-
+  const seenJobIds = new Set();
+  const seenCursors = new Set();
   let inserted = 0;
   let updated = 0;
-  for (const job of data.jobs) {
-    const result = await upsertListing(database, mapJobicyJob(job));
-    if (result[0]?.inserted) inserted += 1;
-    else updated += 1;
-  }
+  let totalFetched = 0;
+  let skipped = 0;
+  let pagesFetched = 0;
+  let nextCursor = null;
+
+  do {
+    if (nextCursor && pagesFetched > 0) {
+      await wait(JOB_FETCH_DELAY_MS);
+    }
+
+    const data = await fetchJobicyPage({
+      keywords,
+      location,
+      resultLimit,
+      cursor: nextCursor,
+      fetchImpl,
+    });
+
+    const pageJobs = Array.isArray(data.jobs) ? data.jobs : [];
+    let pageFetched = 0;
+    for (const job of pageJobs) {
+      const normalized = mapJobicyJob(job);
+      const deduplicationKey = normalized.externalId || normalized.externalUrl || JSON.stringify(job);
+      if (seenJobIds.has(deduplicationKey)) {
+        skipped += 1;
+        continue;
+      }
+      seenJobIds.add(deduplicationKey);
+      const result = await upsertListing(database, normalized);
+      if (result[0]?.inserted) inserted += 1;
+      else updated += 1;
+      pageFetched += 1;
+    }
+
+    totalFetched += pageFetched;
+    pagesFetched += 1;
+
+    const currentCursor = typeof data.nextCursor === "string" ? data.nextCursor.trim() : null;
+    if (!currentCursor) break;
+    if (seenCursors.has(currentCursor)) {
+      break;
+    }
+    seenCursors.add(currentCursor);
+    nextCursor = currentCursor;
+  } while (nextCursor);
 
   let listingVectors;
   try {
@@ -162,7 +243,20 @@ export async function fetchAndStoreJobs(
       cause: error,
     });
   }
-  return { fetched: data.jobs.length, inserted, updated, listingVectors };
+
+  const result = {
+    fetched: totalFetched,
+    inserted,
+    updated,
+    skipped,
+    pagesFetched,
+    listingVectors,
+  };
+  return defineAliasProperties(result, {
+    totalFetched,
+    pagesFetched,
+    skipped,
+  });
 }
 
 export async function fetchAllConfiguredJobs(
@@ -173,9 +267,9 @@ export async function fetchAllConfiguredJobs(
     wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds)),
   } = {},
 ) {
-  const totals = { fetched: 0, inserted: 0, updated: 0 };
-  let requestCount = 0;
+  const totals = { fetched: 0, inserted: 0, updated: 0, skipped: 0, pagesFetched: 0 };
   let fetchError;
+  let requestCount = 0;
 
   try {
     for (const keywords of DEFAULT_JOB_KEYWORDS) {
@@ -187,12 +281,15 @@ export async function fetchAllConfiguredJobs(
           database,
           rebuildVectors: async () => undefined,
           resultLimit: DEFAULT_JOB_RESULT_LIMIT,
+          wait,
         },
       );
       requestCount += 1;
       totals.fetched += result.fetched;
       totals.inserted += result.inserted;
       totals.updated += result.updated;
+      totals.skipped += result.skipped ?? 0;
+      totals.pagesFetched += result.pagesFetched ?? 0;
     }
   } catch (error) {
     fetchError = error;
@@ -217,5 +314,18 @@ export async function fetchAllConfiguredJobs(
   }
 
   if (fetchError) throw fetchError;
-  return { ...totals, listingVectors };
+
+  const result = {
+    fetched: totals.fetched,
+    inserted: totals.inserted,
+    updated: totals.updated,
+    skipped: totals.skipped,
+    pagesFetched: totals.pagesFetched,
+    listingVectors,
+  };
+  return defineAliasProperties(result, {
+    totalFetched: totals.fetched,
+    pagesFetched: totals.pagesFetched,
+    skipped: totals.skipped,
+  });
 }

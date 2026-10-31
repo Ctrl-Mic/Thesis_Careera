@@ -1,14 +1,48 @@
 @echo off
-setlocal
+setlocal ENABLEEXTENSIONS
 
 set "ROOT=%~dp0"
 set "APP=%ROOT%thesis-system"
+set "ENV_FILE=%APP%\.env.local"
 set "INSIGHT=%APP%\backend\insightface_api"
 set "PYTHON=%INSIGHT%\.venv\Scripts\python.exe"
+set "MIGRATE_MODE=0"
 
-if not exist "%APP%\.env.local" (
-  echo Missing configuration file: "%APP%\.env.local"
+if /I "%~1"=="--migrate" set "MIGRATE_MODE=1"
+if /I "%~1"=="--help" goto show_help
+
+if not exist "%APP%" (
+  echo Missing app folder: "%APP%"
+  goto failed
+)
+
+if not exist "%ENV_FILE%" (
+  echo Missing configuration file: "%ENV_FILE%"
   echo Create it using the setup instructions in README.md.
+  goto failed
+)
+
+findstr /I /C:"DATABASE_URL=" "%ENV_FILE%" >nul
+if errorlevel 1 (
+  echo Missing DATABASE_URL in "%ENV_FILE%".
+  goto failed
+)
+
+findstr /I /C:"AUTH_TOKEN_SECRET=" "%ENV_FILE%" >nul
+if errorlevel 1 (
+  echo Missing AUTH_TOKEN_SECRET in "%ENV_FILE%".
+  goto failed
+)
+
+where node >nul 2>&1
+if errorlevel 1 (
+  echo Node.js is required but was not found in PATH.
+  goto failed
+)
+
+where npm >nul 2>&1
+if errorlevel 1 (
+  echo npm is required but was not found in PATH.
   goto failed
 )
 
@@ -20,14 +54,14 @@ goto prepare_prisma
 :install_node_dependencies
 echo Installing Node.js dependencies...
 pushd "%APP%"
-call npm install
+call npm install --no-fund --no-audit
 if errorlevel 1 goto node_install_failed
 popd
 
 :prepare_prisma
 pushd "%APP%"
 if not exist "%APP%\node_modules\.prisma\client\index.js" goto generate_prisma
-node -e "const fs=require('node:fs');process.exit(fs.statSync('prisma/schema.prisma').mtimeMs > fs.statSync('node_modules/.prisma/client/index.js').mtimeMs ? 1 : 0)"
+node -e "const fs=require('node:fs');const schema='prisma/schema.prisma';const client='node_modules/.prisma/client/index.js';process.exit(fs.existsSync(schema) && fs.existsSync(client) && fs.statSync(schema).mtimeMs <= fs.statSync(client).mtimeMs ? 0 : 1)"
 if errorlevel 1 goto generate_prisma
 goto apply_migrations
 
@@ -37,7 +71,7 @@ call npx prisma generate
 if errorlevel 1 goto prisma_generate_failed
 
 :apply_migrations
-if /I "%~1"=="--migrate" (
+if "%MIGRATE_MODE%"=="1" (
   echo Applying pending Prisma migrations...
   call npx prisma migrate deploy
   if errorlevel 1 goto migration_failed
@@ -92,6 +126,12 @@ goto startup_complete
 echo InsightFace API is already healthy on port 8000; skipping the duplicate process.
 
 :startup_complete
+exit /b 0
+
+:show_help
+echo Usage: run-system.bat [--migrate]
+echo.
+echo --migrate   Apply pending Prisma migrations before starting the local services.
 exit /b 0
 
 :node_install_failed
