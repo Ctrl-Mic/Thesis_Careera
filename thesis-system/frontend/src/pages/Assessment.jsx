@@ -21,6 +21,8 @@ async function readApiResponse(response, fallbackMessage) {
 function Assessment() {
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
+  const [savedAnswers, setSavedAnswers] = useState({});
+  const [savedAttemptId, setSavedAttemptId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -44,10 +46,15 @@ function Assessment() {
         if (!Array.isArray(questionResult.questions)) {
           throw new Error("The assessment question list is invalid.");
         }
-        setQuestions(questionResult.questions);
-        setAnswers(Object.fromEntries(
+        const nextAnswers = Object.fromEntries(
           latestResult.answers.map(({ category, level }) => [category, level]),
-        ));
+        );
+
+        setQuestions(questionResult.questions);
+        setAnswers(nextAnswers);
+        setSavedAnswers(nextAnswers);
+        setSavedAttemptId(latestResult.attempt_id ?? null);
+
         if (latestResult.attempt_id) {
           setNotice("Your latest saved answers have been loaded.");
         }
@@ -69,9 +76,20 @@ function Assessment() {
     [answers, questions],
   );
 
+  const hasSavedAttempt = Boolean(savedAttemptId);
+  const isAssessmentComplete = questions.length > 0 && unansweredQuestions.length === 0;
+  const hasChanges = useMemo(() => {
+    if (!isAssessmentComplete) {
+      return true;
+    }
+
+    return questions.some(({ category }) => answers[category] !== savedAnswers[category]);
+  }, [answers, isAssessmentComplete, questions, savedAnswers]);
+
   async function handleSubmit(event) {
     event.preventDefault();
     if (unansweredQuestions.length > 0 || isSubmitting) return;
+    if (hasSavedAttempt && !hasChanges) return;
 
     setIsSubmitting(true);
     setError("");
@@ -88,8 +106,13 @@ function Assessment() {
           level: answers[category],
         }))),
       });
-      await readApiResponse(response, "Unable to save your assessment.");
-      setNotice("Your assessment answers have been saved.");
+      const result = await readApiResponse(response, "Unable to save your assessment.");
+      const nextSavedAnswers = Object.fromEntries(
+        questions.map(({ category }) => [category, answers[category]]),
+      );
+      setSavedAnswers(nextSavedAnswers);
+      setSavedAttemptId(result.attempt_id ?? savedAttemptId);
+      setNotice(hasSavedAttempt ? "Your assessment has been updated." : "Your assessment answers have been saved.");
       setError("");
     } catch (submitError) {
       setError(submitError.message);
@@ -183,9 +206,14 @@ function Assessment() {
           <button
             className="assessment-submit"
             type="submit"
-            disabled={isLoading || isSubmitting || unansweredQuestions.length > 0}
+            disabled={
+              isLoading ||
+              isSubmitting ||
+              unansweredQuestions.length > 0 ||
+              (hasSavedAttempt && !hasChanges)
+            }
           >
-            {isSubmitting ? "Saving..." : "Submit assessment"}
+            {isSubmitting ? "Saving..." : hasSavedAttempt ? "Update assessment" : "Submit assessment"}
           </button>
         </form>
       )}
