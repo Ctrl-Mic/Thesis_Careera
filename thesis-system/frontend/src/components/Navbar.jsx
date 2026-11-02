@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import BrandWordmark from "./BrandWordmark";
 
 function Icon({ name, size = 18, className = "" }) {
   const commonProps = {
@@ -107,9 +108,7 @@ export default function Navbar({ children, searchText = "", onSearchChange = () 
     <div className="dashboard-app">
       <aside className="dashboard-sidebar">
         <Link className="sidebar-brand" to="/home" aria-label="Careera home">
-          <span>C</span>
-          <span className="sidebar-brand-star">★</span>
-          <strong>REERA</strong>
+          <BrandWordmark />
         </Link>
 
         <nav className="sidebar-nav" aria-label="Dashboard navigation">

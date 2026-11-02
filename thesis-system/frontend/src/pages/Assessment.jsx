@@ -125,7 +125,7 @@ function Assessment() {
     <Navbar>
       <div className="dashboard-heading assessment-heading">
         <div>
-          <p className="dashboard-eyebrow">CAREERA / CAREER ASSESSMENT</p>
+          <p className="dashboard-eyebrow"><span className="font-alkatra font-semibold">CAREERA</span> / CAREER ASSESSMENT</p>
           <h1>Tourism Skills Assessment</h1>
           <p className="dashboard-subtitle">
             Explore 18 skill areas and sample proficiency levels relevant to

@@ -1,5 +1,94 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import BrandWordmark from "../components/BrandWordmark";
+import listSparkleIcon from "../icons/listSparkleY.svg";
+import personDocumentIcon from "../icons/personDocumentY.svg";
+import pieChartIcon from "../icons/pieChartY.svg";
+import careeraLogo from "../images/careeraLogo.png";
+
+const featureCards = [
+  {
+    title: "ASSESS",
+    description: "Input skills, goals, and interests to build your career profile.",
+    icon: pieChartIcon,
+  },
+  {
+    title: "MATCH",
+    description: "Align suitable career that matches your profile.",
+    icon: personDocumentIcon,
+  },
+  {
+    title: "RECOMMEND",
+    description: "Get personalized career recommendations that fits your specialized skills.",
+    icon: listSparkleIcon,
+  },
+];
+
+function FeatureCards() {
+  const [activeCard, setActiveCard] = useState(1);
+  const [supportsHover, setSupportsHover] = useState(false);
+  const [isHoverPaused, setIsHoverPaused] = useState(false);
+
+  useEffect(() => {
+    const hoverMedia = window.matchMedia("(hover: hover)");
+    const updateHoverSupport = () => {
+      setSupportsHover(hoverMedia.matches);
+      if (!hoverMedia.matches) {
+        setIsHoverPaused(false);
+      }
+    };
+
+    updateHoverSupport();
+    hoverMedia.addEventListener("change", updateHoverSupport);
+
+    return () => hoverMedia.removeEventListener("change", updateHoverSupport);
+  }, []);
+
+  useEffect(() => {
+    if (isHoverPaused) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setActiveCard((currentCard) => (currentCard + 1) % featureCards.length);
+    }, 3000);
+
+    return () => window.clearTimeout(timerId);
+  }, [activeCard, isHoverPaused]);
+
+  return (
+    <section
+      className={`feature-section feature-active-${activeCard}`}
+      aria-label="Career pathway steps"
+    >
+      {featureCards.map((card, index) => {
+        const isActive = activeCard === index;
+
+        return (
+          <div
+            key={card.title}
+            className={`feature-card${isActive ? " active" : ""}`}
+            onMouseEnter={supportsHover ? () => {
+              setActiveCard(index);
+              setIsHoverPaused(true);
+            } : undefined}
+            onMouseLeave={supportsHover ? () => setIsHoverPaused(false) : undefined}
+          >
+            <div className="feature-card-top">
+              <h2>{card.title}</h2>
+              <div
+                className="feature-icon-mask"
+                style={{ "--feature-icon": `url("${card.icon}")` }}
+                aria-hidden="true"
+              />
+            </div>
+            <p>{card.description}</p>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
 
 function Landing() {
   const navigate = useNavigate();
@@ -158,7 +247,7 @@ function Landing() {
 
       <header className="landing-header">
         <button className="brand-logo" onClick={() => window.scrollTo(0, 0)}>
-          C<span>★</span>REERA
+          <BrandWordmark />
         </button>
 
         <div className="header-right">
@@ -193,8 +282,14 @@ function Landing() {
           <h1 className="hero-title">
             <span className="hero-title-dark">Navigate Your</span>
 
-            <span className="hero-title-yellow">
-              Career Era <span className="sparkle">✦</span>
+            <span className="hero-title-yellow font-alkatra font-semibold">
+              Career Era
+              <img
+                className="hero-sparkle"
+                src={careeraLogo}
+                alt=""
+                aria-hidden="true"
+              />
             </span>
           </h1>
 
@@ -209,57 +304,7 @@ function Landing() {
             FEATURE CARDS
         ========================= */}
 
-        <section className="feature-section">
-          {/* ASSESS */}
-          <div className="feature-card feature-dark">
-            <div className="feature-card-top">
-              <h2>ASSESS</h2>
-
-              <div className="feature-icon">
-                <PieChartIcon />
-              </div>
-            </div>
-
-            <p>
-              Input skills, goals, and interests to build your career
-              profile.
-            </p>
-
-          </div>
-
-          {/* MATCH */}
-          <div className="feature-card feature-match">
-            <div className="feature-card-top">
-              <h2>MATCH</h2>
-
-              <div className="feature-icon">
-                <MatchIcon />
-              </div>
-            </div>
-
-            <p>
-              Align suitable career that matches your profile.
-            </p>
-
-          </div>
-
-          {/* RECOMMEND */}
-          <div className="feature-card feature-dark">
-            <div className="feature-card-top">
-              <h2>RECOMMEND</h2>
-
-              <div className="feature-icon">
-                <RecommendIcon />
-              </div>
-            </div>
-
-            <p>
-              Get personalized career recommendations that fits your
-              specialized skills.
-            </p>
-
-          </div>
-        </section>
+        <FeatureCards />
 
         {/* =========================
             AUTHENTICATION
@@ -293,11 +338,11 @@ function Landing() {
                 {isCreateAccount ? (
                   <>
                     <div className="auth-logo">
-                      C<span>★</span>REERA
+                      <BrandWordmark />
                     </div>
 
                     <p>
-                      Join Careera to create your personalized career
+                      Join <span className="font-alkatra font-semibold">Careera</span> to create your personalized career
                       path.
                     </p>
                     <p>
@@ -378,7 +423,7 @@ function Landing() {
                       id="email"
                       name="email"
                       type="email"
-                      placeholder="example@gmail.com"
+                      placeholder="name@gmail.com"
                       value={formData.email}
                       onChange={handleChange}
                       pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
@@ -643,44 +688,6 @@ function EyeOffIcon() {
       <path d="M10.5 6.3A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.2 3.8" />
       <path d="M6.7 6.8C4 8.5 2.5 12 2.5 12s3.5 6 9.5 6c1.5 0 2.8-.3 4-.8" />
       <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
-    </svg>
-  );
-}
-
-function PieChartIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none">
-      <path d="M12 3v9l7.8 4.5A9 9 0 0 1 12 21a9 9 0 0 1 0-18Z" />
-      <path d="M12 3a9 9 0 0 1 7.8 4.5L12 12V3Z" />
-    </svg>
-  );
-}
-
-function MatchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none">
-      <circle cx="8.5" cy="8" r="3" />
-      <path d="M3.5 19c.6-3 2.3-4.8 5-4.8 1.2 0 2.2.3 3 .9" />
-      <rect x="14" y="4" width="7" height="9" rx="1.5" />
-      <circle cx="17.5" cy="8" r="1.4" />
-      <path d="M15.5 11h4" />
-    </svg>
-  );
-}
-
-function RecommendIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none">
-      <circle cx="4.5" cy="5" r="1" />
-      <circle cx="4.5" cy="10" r="1" />
-      <circle cx="4.5" cy="15" r="1" />
-
-      <path d="M8 5h9" />
-      <path d="M8 10h6" />
-      <path d="M8 15h4" />
-
-      <path d="M18 14v6" />
-      <path d="M15 17h6" />
     </svg>
   );
 }

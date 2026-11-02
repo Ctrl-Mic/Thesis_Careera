@@ -411,7 +411,7 @@ function Home() {
     >
       <div className="dashboard-heading" id="dashboard-top">
         <div>
-          <p className="dashboard-eyebrow">CAREERA / STUDENT SPACE</p>
+          <p className="dashboard-eyebrow"><span className="font-alkatra font-semibold">CAREERA</span> / STUDENT SPACE</p>
           <h1>Your career dashboard</h1>
           <p className="dashboard-subtitle">
             Explore recommendations and opportunities matched to your goals.

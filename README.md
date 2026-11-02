@@ -61,6 +61,30 @@ Before running the project, make sure you have:
 - PostgreSQL database or a Neon/Postgres-compatible database
 - A `.env.local` file in the `thesis-system` folder
 
+## Hardware Requirements
+
+The following are practical estimates for running the frontend, backend, and
+ID/face-verification API together on one 64-bit computer. They are not results
+from a formal load or performance benchmark.
+
+| Component | Minimum | Recommended |
+| --- | --- | --- |
+| Processor | 64-bit, 2 cores | 64-bit, 4 or more cores |
+| Memory | 8 GB RAM | 16 GB RAM |
+| Free storage | 5 GB for application dependencies and verification models | 10 GB or more |
+| Display | 1366 × 768 | 1920 × 1080 |
+| Camera | Webcam for ID and face verification | 720p or better webcam |
+| Network | Internet access for package setup, remote database, and job listings | Stable broadband connection |
+
+The verification service runs face analysis and OCR on the CPU, so a dedicated
+GPU is not required. A camera is only needed for the ID and face-verification
+feature; the rest of the application can be used without one. The storage
+estimates exclude the operating system and any locally hosted PostgreSQL data.
+When PostgreSQL is hosted by Neon or another managed provider, database storage
+and compute are supplied separately. For a shared production deployment, size
+the server according to expected simultaneous users and verify it with
+application-specific load testing.
+
 ## Environment Setup
 
 Create a file named `.env.local` inside `thesis-system` with your database URL:

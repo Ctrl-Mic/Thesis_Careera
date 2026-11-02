@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import BrandWordmark from "../components/BrandWordmark";
 import { verifyStudentFace } from "../services/studentVerification";
 
 function CameraVerification() {
@@ -75,7 +76,7 @@ function CameraVerification() {
     <main className="verification-page">
       <section className="verification-card" aria-labelledby="camera-title">
         <Link className="verification-brand" to="/login" aria-label="Careera login">
-          C<span>★</span>REERA
+          <BrandWordmark />
         </Link>
 
         <div className="verification-progress" aria-label="Verification step 2 of 2">

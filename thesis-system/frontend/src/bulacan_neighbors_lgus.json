@@ -1,0 +1,554 @@
+{
+  "meta": {
+    "description": "Bulacan and neighboring provinces/regions -> cities and municipalities (static, hand-compiled)",
+    "country": "PH",
+    "as_of": "2026-11",
+    "notes": [
+      "Quezon Province (borders Bulacan via Doña Remedios Trinidad) is intentionally omitted.",
+      "Compiled from general knowledge, not an official PSGC export. Verify against PSA PSGC before production use.",
+      "NCR is a region (not a province); Manila is a city, Pateros is a municipality."
+    ]
+  },
+  "provinces": [
+    {
+      "name": "Bulacan",
+      "region": "Region III (Central Luzon)",
+      "is_primary": true,
+      "borders_bulacan": null,
+      "lgus": [
+        {
+          "name": "Malolos",
+          "type": "city"
+        },
+        {
+          "name": "Meycauayan",
+          "type": "city"
+        },
+        {
+          "name": "San Jose del Monte",
+          "type": "city"
+        },
+        {
+          "name": "Angat",
+          "type": "municipality"
+        },
+        {
+          "name": "Balagtas",
+          "type": "municipality"
+        },
+        {
+          "name": "Baliuag",
+          "type": "municipality"
+        },
+        {
+          "name": "Bocaue",
+          "type": "municipality"
+        },
+        {
+          "name": "Bulakan",
+          "type": "municipality"
+        },
+        {
+          "name": "Bustos",
+          "type": "municipality"
+        },
+        {
+          "name": "Calumpit",
+          "type": "municipality"
+        },
+        {
+          "name": "Doña Remedios Trinidad",
+          "type": "municipality"
+        },
+        {
+          "name": "Guiguinto",
+          "type": "municipality"
+        },
+        {
+          "name": "Hagonoy",
+          "type": "municipality"
+        },
+        {
+          "name": "Marilao",
+          "type": "municipality"
+        },
+        {
+          "name": "Norzagaray",
+          "type": "municipality"
+        },
+        {
+          "name": "Obando",
+          "type": "municipality"
+        },
+        {
+          "name": "Pandi",
+          "type": "municipality"
+        },
+        {
+          "name": "Paombong",
+          "type": "municipality"
+        },
+        {
+          "name": "Plaridel",
+          "type": "municipality"
+        },
+        {
+          "name": "Pulilan",
+          "type": "municipality"
+        },
+        {
+          "name": "San Ildefonso",
+          "type": "municipality"
+        },
+        {
+          "name": "San Miguel",
+          "type": "municipality"
+        },
+        {
+          "name": "San Rafael",
+          "type": "municipality"
+        },
+        {
+          "name": "Santa Maria",
+          "type": "municipality"
+        }
+      ],
+      "counts": {
+        "cities": 3,
+        "municipalities": 21
+      }
+    },
+    {
+      "name": "Pampanga",
+      "region": "Region III (Central Luzon)",
+      "is_primary": false,
+      "borders_bulacan": "west",
+      "lgus": [
+        {
+          "name": "Angeles",
+          "type": "city"
+        },
+        {
+          "name": "Mabalacat",
+          "type": "city"
+        },
+        {
+          "name": "San Fernando",
+          "type": "city"
+        },
+        {
+          "name": "Apalit",
+          "type": "municipality"
+        },
+        {
+          "name": "Arayat",
+          "type": "municipality"
+        },
+        {
+          "name": "Bacolor",
+          "type": "municipality"
+        },
+        {
+          "name": "Candaba",
+          "type": "municipality"
+        },
+        {
+          "name": "Floridablanca",
+          "type": "municipality"
+        },
+        {
+          "name": "Guagua",
+          "type": "municipality"
+        },
+        {
+          "name": "Lubao",
+          "type": "municipality"
+        },
+        {
+          "name": "Macabebe",
+          "type": "municipality"
+        },
+        {
+          "name": "Magalang",
+          "type": "municipality"
+        },
+        {
+          "name": "Masantol",
+          "type": "municipality"
+        },
+        {
+          "name": "Mexico",
+          "type": "municipality"
+        },
+        {
+          "name": "Minalin",
+          "type": "municipality"
+        },
+        {
+          "name": "Porac",
+          "type": "municipality"
+        },
+        {
+          "name": "San Luis",
+          "type": "municipality"
+        },
+        {
+          "name": "San Simon",
+          "type": "municipality"
+        },
+        {
+          "name": "Santa Ana",
+          "type": "municipality"
+        },
+        {
+          "name": "Santa Rita",
+          "type": "municipality"
+        },
+        {
+          "name": "Santo Tomas",
+          "type": "municipality"
+        },
+        {
+          "name": "Sasmuan",
+          "type": "municipality"
+        }
+      ],
+      "counts": {
+        "cities": 3,
+        "municipalities": 19
+      }
+    },
+    {
+      "name": "Nueva Ecija",
+      "region": "Region III (Central Luzon)",
+      "is_primary": false,
+      "borders_bulacan": "north",
+      "lgus": [
+        {
+          "name": "Cabanatuan",
+          "type": "city"
+        },
+        {
+          "name": "Gapan",
+          "type": "city"
+        },
+        {
+          "name": "Muñoz",
+          "type": "city"
+        },
+        {
+          "name": "Palayan",
+          "type": "city"
+        },
+        {
+          "name": "San Jose",
+          "type": "city"
+        },
+        {
+          "name": "Aliaga",
+          "type": "municipality"
+        },
+        {
+          "name": "Bongabon",
+          "type": "municipality"
+        },
+        {
+          "name": "Cabiao",
+          "type": "municipality"
+        },
+        {
+          "name": "Carranglan",
+          "type": "municipality"
+        },
+        {
+          "name": "Cuyapo",
+          "type": "municipality"
+        },
+        {
+          "name": "Gabaldon",
+          "type": "municipality"
+        },
+        {
+          "name": "General Mamerto Natividad",
+          "type": "municipality"
+        },
+        {
+          "name": "General Tinio",
+          "type": "municipality"
+        },
+        {
+          "name": "Guimba",
+          "type": "municipality"
+        },
+        {
+          "name": "Jaen",
+          "type": "municipality"
+        },
+        {
+          "name": "Laur",
+          "type": "municipality"
+        },
+        {
+          "name": "Licab",
+          "type": "municipality"
+        },
+        {
+          "name": "Llanera",
+          "type": "municipality"
+        },
+        {
+          "name": "Lupao",
+          "type": "municipality"
+        },
+        {
+          "name": "Nampicuan",
+          "type": "municipality"
+        },
+        {
+          "name": "Pantabangan",
+          "type": "municipality"
+        },
+        {
+          "name": "Peñaranda",
+          "type": "municipality"
+        },
+        {
+          "name": "Quezon",
+          "type": "municipality"
+        },
+        {
+          "name": "Rizal",
+          "type": "municipality"
+        },
+        {
+          "name": "San Antonio",
+          "type": "municipality"
+        },
+        {
+          "name": "San Isidro",
+          "type": "municipality"
+        },
+        {
+          "name": "San Leonardo",
+          "type": "municipality"
+        },
+        {
+          "name": "Santa Rosa",
+          "type": "municipality"
+        },
+        {
+          "name": "Santo Domingo",
+          "type": "municipality"
+        },
+        {
+          "name": "Talavera",
+          "type": "municipality"
+        },
+        {
+          "name": "Talugtug",
+          "type": "municipality"
+        },
+        {
+          "name": "Zaragoza",
+          "type": "municipality"
+        }
+      ],
+      "counts": {
+        "cities": 5,
+        "municipalities": 27
+      }
+    },
+    {
+      "name": "Aurora",
+      "region": "Region III (Central Luzon)",
+      "is_primary": false,
+      "borders_bulacan": "northeast",
+      "lgus": [
+        {
+          "name": "Baler",
+          "type": "municipality"
+        },
+        {
+          "name": "Casiguran",
+          "type": "municipality"
+        },
+        {
+          "name": "Dilasag",
+          "type": "municipality"
+        },
+        {
+          "name": "Dinalungan",
+          "type": "municipality"
+        },
+        {
+          "name": "Dingalan",
+          "type": "municipality"
+        },
+        {
+          "name": "Dipaculao",
+          "type": "municipality"
+        },
+        {
+          "name": "Maria Aurora",
+          "type": "municipality"
+        },
+        {
+          "name": "San Luis",
+          "type": "municipality"
+        }
+      ],
+      "counts": {
+        "cities": 0,
+        "municipalities": 8
+      }
+    },
+    {
+      "name": "Rizal",
+      "region": "Region IV-A (CALABARZON)",
+      "is_primary": false,
+      "borders_bulacan": "southeast",
+      "lgus": [
+        {
+          "name": "Antipolo",
+          "type": "city"
+        },
+        {
+          "name": "Angono",
+          "type": "municipality"
+        },
+        {
+          "name": "Baras",
+          "type": "municipality"
+        },
+        {
+          "name": "Binangonan",
+          "type": "municipality"
+        },
+        {
+          "name": "Cainta",
+          "type": "municipality"
+        },
+        {
+          "name": "Cardona",
+          "type": "municipality"
+        },
+        {
+          "name": "Jala-Jala",
+          "type": "municipality"
+        },
+        {
+          "name": "Morong",
+          "type": "municipality"
+        },
+        {
+          "name": "Pililla",
+          "type": "municipality"
+        },
+        {
+          "name": "Rodriguez",
+          "type": "municipality"
+        },
+        {
+          "name": "San Mateo",
+          "type": "municipality"
+        },
+        {
+          "name": "Tanay",
+          "type": "municipality"
+        },
+        {
+          "name": "Taytay",
+          "type": "municipality"
+        },
+        {
+          "name": "Teresa",
+          "type": "municipality"
+        }
+      ],
+      "counts": {
+        "cities": 1,
+        "municipalities": 13
+      }
+    },
+    {
+      "name": "Metro Manila",
+      "region": "NCR (National Capital Region)",
+      "is_primary": false,
+      "borders_bulacan": "south",
+      "lgus": [
+        {
+          "name": "Caloocan",
+          "type": "city"
+        },
+        {
+          "name": "Las Piñas",
+          "type": "city"
+        },
+        {
+          "name": "Makati",
+          "type": "city"
+        },
+        {
+          "name": "Malabon",
+          "type": "city"
+        },
+        {
+          "name": "Mandaluyong",
+          "type": "city"
+        },
+        {
+          "name": "Manila",
+          "type": "city"
+        },
+        {
+          "name": "Marikina",
+          "type": "city"
+        },
+        {
+          "name": "Muntinlupa",
+          "type": "city"
+        },
+        {
+          "name": "Navotas",
+          "type": "city"
+        },
+        {
+          "name": "Parañaque",
+          "type": "city"
+        },
+        {
+          "name": "Pasay",
+          "type": "city"
+        },
+        {
+          "name": "Pasig",
+          "type": "city"
+        },
+        {
+          "name": "Quezon City",
+          "type": "city"
+        },
+        {
+          "name": "San Juan",
+          "type": "city"
+        },
+        {
+          "name": "Taguig",
+          "type": "city"
+        },
+        {
+          "name": "Valenzuela",
+          "type": "city"
+        },
+        {
+          "name": "Pateros",
+          "type": "municipality"
+        }
+      ],
+      "counts": {
+        "cities": 16,
+        "municipalities": 1
+      }
+    }
+  ]
+}

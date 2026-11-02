@@ -313,7 +313,7 @@ export default function AdminTools() {
     <Navbar>
       <div className="dashboard-heading">
         <div>
-          <p className="dashboard-eyebrow">CAREERA / ADMINISTRATION</p>
+          <p className="dashboard-eyebrow"><span className="font-alkatra font-semibold">CAREERA</span> / ADMINISTRATION</p>
           <h1>Developer tools</h1>
           <p className="dashboard-subtitle">
             Manage student accounts and job listings.

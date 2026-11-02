@@ -7,6 +7,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import Landing from "./pages/Landing";
 import Profile from "./pages/Profile";
+import PreAssessment from "./pages/PreAssessment";
 import Saved from "./pages/Saved";
 import StudentIdVerification from "./pages/StudentIdVerification";
 
@@ -79,6 +80,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-student-id" element={<StudentIdVerification />} />
         <Route path="/verify-camera" element={<CameraVerification />} />
+        <Route path="/pre-assessment" element={<PreAssessment />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
