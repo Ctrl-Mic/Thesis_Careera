@@ -58,6 +58,6 @@ app.use((error, _request, response, next) => {
   response.status(statusCode).json({ success: false, message });
 });
 
-app.listen(port, "127.0.0.1", () => {
-  console.log(`Authentication server listening on http://127.0.0.1:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Careera backend listening on port ${port}`);
 });

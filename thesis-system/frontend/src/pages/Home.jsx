@@ -28,6 +28,157 @@ const insights = [
   },
 ];
 
+function sanitizeRichText(rawHtml = "") {
+  if (typeof rawHtml !== "string") {
+    return "";
+  }
+
+  const trimmedHtml = rawHtml.trim();
+  if (!trimmedHtml) {
+    return "";
+  }
+
+  const parser = new DOMParser();
+  const document = parser.parseFromString(trimmedHtml, "text/html");
+  const safeTags = new Set([
+    "A",
+    "B",
+    "BLOCKQUOTE",
+    "BR",
+    "CODE",
+    "DIV",
+    "EM",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "HR",
+    "I",
+    "LI",
+    "OL",
+    "P",
+    "PRE",
+    "SPAN",
+    "STRONG",
+    "TABLE",
+    "TBODY",
+    "TD",
+    "TH",
+    "THEAD",
+    "TR",
+    "U",
+    "UL",
+  ]);
+
+  const disallowedTags = new Set([
+    "SCRIPT",
+    "STYLE",
+    "IFRAME",
+    "OBJECT",
+    "EMBED",
+    "SVG",
+    "MATH",
+    "LINK",
+    "META",
+    "BASE",
+    "TEMPLATE",
+    "FORM",
+    "INPUT",
+    "BUTTON",
+    "TEXTAREA",
+    "SELECT",
+  ]);
+
+  document.body.querySelectorAll("*").forEach((node) => {
+    const tagName = node.tagName.toUpperCase();
+
+    if (disallowedTags.has(tagName) || !safeTags.has(tagName)) {
+      const fragment = document.createDocumentFragment();
+      while (node.firstChild) {
+        fragment.appendChild(node.firstChild);
+      }
+      node.replaceWith(fragment);
+      return;
+    }
+
+    if (node.hasAttribute("style")) {
+      node.removeAttribute("style");
+    }
+
+    [...node.attributes].forEach((attribute) => {
+      const name = attribute.name.toLowerCase();
+      if (!["href", "target", "rel", "title"].includes(name)) {
+        node.removeAttribute(attribute.name);
+      }
+    });
+
+    if (node.tagName.toUpperCase() === "A") {
+      const href = node.getAttribute("href");
+      if (!href || !/^(https?:\/\/|mailto:|\/)/i.test(href)) {
+        node.removeAttribute("href");
+      } else {
+        node.setAttribute("target", "_blank");
+        node.setAttribute("rel", "noopener noreferrer nofollow");
+      }
+    }
+
+    if (node.hasAttribute("onclick")) {
+      node.removeAttribute("onclick");
+    }
+
+    ["onload", "onerror", "onmouseover", "onfocus", "onblur", "onkeydown"].forEach((eventName) => {
+      if (node.hasAttribute(eventName)) {
+        node.removeAttribute(eventName);
+      }
+    });
+  });
+
+  const sanitizedHtml = document.body.innerHTML;
+  return sanitizedHtml.trim();
+}
+
+function stripHtmlToPlainText(rawHtml = "") {
+  if (typeof rawHtml !== "string") {
+    return "";
+  }
+
+  const flattenedHtml = rawHtml.replace(/<br\s*\/?>/gi, "\n");
+  const parser = new DOMParser();
+  const document = parser.parseFromString(flattenedHtml, "text/html");
+  return (document.body?.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
+function buildDescriptionPreview(rawHtml = "", maxLength = 180) {
+  const plainText = stripHtmlToPlainText(rawHtml);
+  if (!plainText) {
+    return "No description available.";
+  }
+
+  if (plainText.length <= maxLength) {
+    return plainText;
+  }
+
+  const trimmed = plainText.slice(0, maxLength).trimEnd();
+  return `${trimmed.slice(0, Math.max(0, trimmed.lastIndexOf(" ") || trimmed.length - 1)).trimEnd()}…`;
+}
+
+function RichText({ html, className = "" }) {
+  const sanitizedHtml = sanitizeRichText(html);
+
+  if (!sanitizedHtml) {
+    return null;
+  }
+
+  return (
+    <div
+      className={className}
+      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+    />
+  );
+}
+
 function Home() {
   const [jobs, setJobs] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
@@ -37,6 +188,12 @@ function Home() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [loadingJobs, setLoadingJobs] = useState(true);
   const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+  const [assessmentProgress, setAssessmentProgress] = useState({
+    total: 0,
+    answered: 0,
+    percent: 0,
+    loading: true,
+  });
   const [jobsError, setJobsError] = useState("");
   const [recommendationError, setRecommendationError] = useState("");
   const [notice, setNotice] = useState("");
@@ -102,8 +259,51 @@ function Home() {
       }
     }
 
+    async function loadAssessmentProgress() {
+      if (!token) {
+        if (isMounted) {
+          setAssessmentProgress({ total: 0, answered: 0, percent: 0, loading: false });
+        }
+        return;
+      }
+
+      try {
+        const [questionsResult, latestResult] = await Promise.all([
+          fetch("/api/assessment/questions").then((response) => response.json()),
+          fetch("/api/assessment/latest", {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((response) => response.json()),
+        ]);
+
+        const totalQuestions = Array.isArray(questionsResult?.questions) ? questionsResult.questions.length : 0;
+        const answeredCategories = new Set(
+          Array.isArray(latestResult?.answers)
+            ? latestResult.answers
+                .filter(({ category, level }) => category && Number.isInteger(level) && level >= 0 && level <= 5)
+                .map(({ category }) => category)
+            : []
+        );
+
+        const percent = totalQuestions > 0 ? Math.round((answeredCategories.size / totalQuestions) * 100) : 0;
+
+        if (isMounted) {
+          setAssessmentProgress({
+            total: totalQuestions,
+            answered: answeredCategories.size,
+            percent,
+            loading: false,
+          });
+        }
+      } catch (_error) {
+        if (isMounted) {
+          setAssessmentProgress({ total: 0, answered: 0, percent: 0, loading: false });
+        }
+      }
+    }
+
     loadJobs();
     loadRecommendations();
+    loadAssessmentProgress();
 
     return () => {
       isMounted = false;
@@ -141,6 +341,42 @@ function Home() {
       listingType: "recommended",
     }));
   const browseJobs = filteredJobs;
+  const completionState = useMemo(() => {
+    const percent = assessmentProgress.percent;
+
+    if (!token) {
+      return {
+        title: "Sign in to track progress",
+        message: "Log in to save your assessment progress and unlock better matches.",
+      };
+    }
+
+    if (percent >= 100) {
+      return {
+        title: "Assessment complete",
+        message: "Your profile is ready for the best matching opportunities.",
+      };
+    }
+
+    if (percent >= 70) {
+      return {
+        title: "Almost there",
+        message: "Finish the remaining questions to sharpen your career recommendations.",
+      };
+    }
+
+    if (percent >= 30) {
+      return {
+        title: "In progress",
+        message: "Answer a few more questions to refine your matches.",
+      };
+    }
+
+    return {
+      title: "Get started",
+      message: "Complete your assessment to improve your recommendations.",
+    };
+  }, [assessmentProgress.percent, token]);
 
   function toggleSaved(jobId) {
     setSavedJobs((currentSaved) => {
@@ -255,21 +491,28 @@ function Home() {
             <div className="widget-heading">
               <span className="widget-kicker">PROFILE</span>
               <h2>Completeness</h2>
-              <p>Take assessment to get your personalized career recommendations</p>
+              <p>Track your assessment progress and keep your recommendations current.</p>
             </div>
 
             <div className="completeness-content">
-              <div className="progress-ring" role="img" aria-label="Profile completeness: 80 percent">
-                <span>80%</span>
+              <div
+                className="progress-ring"
+                role="img"
+                aria-label={`Profile completeness: ${assessmentProgress.percent} percent`}
+                style={{
+                  background: `conic-gradient(var(--dashboard-yellow) ${assessmentProgress.percent}%, #eee7dd ${assessmentProgress.percent}% 100%)`,
+                }}
+              >
+                <span>{assessmentProgress.loading && token ? "..." : `${assessmentProgress.percent}%`}</span>
               </div>
               <div>
-                <strong>Almost there</strong>
-                <p>Complete your assessment to refine your matches.</p>
+                <strong>{completionState.title}</strong>
+                <p>{completionState.message}</p>
               </div>
             </div>
 
             <Link className="widget-primary-link" to="/assessment">
-              Take Assessment <span aria-hidden="true">→</span>
+              {token ? "Review Assessment" : "Take Assessment"} <span aria-hidden="true">→</span>
             </Link>
           </section>
 
@@ -351,8 +594,8 @@ function Home() {
               </div>
 
               <div className="job-modal-summary">
-                <h4>Job Summary</h4>
-                <p>{selectedJob.summary}</p>
+                <h4>Full Description</h4>
+                <RichText html={selectedJob.summary} className="job-rich-content" />
               </div>
             </div>
 
@@ -379,6 +622,7 @@ function Home() {
 
 function JobCard({ job, isSaved, onToggleSave, onApply }) {
   const prototypeTag = job.listingType === "recommended" ? "Top match" : "Database";
+  const descriptionPreview = buildDescriptionPreview(job.summary || "");
 
   return (
     <article className="job-card">
@@ -393,7 +637,7 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
         <span className="job-prototype-tag">{prototypeTag}</span>
       </div>
 
-      <p className="job-summary">{job.summary}</p>
+      <p className="job-preview">{descriptionPreview}</p>
 
       <div className="job-metadata">
         <span><Icon name="pin" />{job.location}</span>
@@ -415,7 +659,9 @@ function JobCard({ job, isSaved, onToggleSave, onApply }) {
           >
             <Icon name="bookmark" />
           </button>
-          <button className="apply-button" type="button" onClick={onApply}>View</button>
+          <button className="apply-button job-description-button" type="button" onClick={onApply}>
+            View Description
+          </button>
         </div>
       </div>
     </article>

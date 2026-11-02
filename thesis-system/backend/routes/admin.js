@@ -1,5 +1,9 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
+import {
+  DEFAULT_JOB_KEYWORDS,
+  DEFAULT_JOB_LOCATION,
+} from "../config/jobFetchConfig.js";
 import { normalizeEmail } from "../services/authService.js";
 import { getAuthUserId } from "../services/sessionService.js";
 import { fetchAllConfiguredJobs, fetchAndStoreJobs } from "../services/jobFetchService.js";
@@ -59,22 +63,24 @@ router.post("/admin/jobs/fetch", requireAdmin, async (request, response) => {
     }
   }
 
-  const keywords = request.body?.keywords;
-  const location = request.body?.location;
-  if (
-    typeof keywords !== "string"
-    || !keywords.trim()
-    || typeof location !== "string"
-    || !location.trim()
-  ) {
-    return response.status(400).json({
+  const keywords = typeof request.body?.keywords === "string" && request.body.keywords.trim()
+    ? request.body.keywords.trim()
+    : DEFAULT_JOB_KEYWORDS[0];
+  const location = typeof request.body?.location === "string" && request.body.location.trim()
+    ? request.body.location.trim()
+    : DEFAULT_JOB_LOCATION;
+
+  try {
+    const result = await fetchAndStoreJobs({ keywords, location });
+    return response.json({ success: true, ...result });
+  } catch (error) {
+    return response.status(500).json({
       success: false,
-      message: "keywords and location must be non-empty strings.",
+      message: error instanceof Error && error.message
+        ? error.message
+        : "Unable to fetch job listings from Jobicy.",
     });
   }
-
-  const result = await fetchAndStoreJobs({ keywords, location });
-  return response.json({ success: true, ...result });
 });
 
 router.post("/admin/job-listings/import", requireAdmin, async (request, response) => {

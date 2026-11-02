@@ -76,11 +76,11 @@ test("fetchAndStoreJobs inserts then updates every fixture row without duplicate
   assert.equal(rebuildCount, 2);
   assert.equal(database.records.size, 5);
   assert.equal(requests.length, 2);
-  assert.equal(requests[0].url.origin + requests[0].url.pathname, "https://jobicy.com/api/v2/remote-jobs");
+  assert.equal(requests[0].url.origin + requests[0].url.pathname, "https://jobicy.com/api/jobs");
   assert.deepEqual(Object.fromEntries(requests[0].url.searchParams), {
-    count: "50",
+    count: "100",
     tag: "front-desk",
-    geo: "Philippines",
+    geo: "philippines",
   });
   assert.deepEqual(
     JSON.parse(database.records.get("jobicy:78901")[10]),
@@ -151,7 +151,7 @@ test("refreshes all configured keywords with one vector rebuild and idempotent u
     ]),
     DEFAULT_JOB_KEYWORDS.map((keyword) => [
       keyword.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-      DEFAULT_JOB_LOCATION,
+      DEFAULT_JOB_LOCATION.toLowerCase(),
       String(DEFAULT_JOB_RESULT_LIMIT),
     ]),
   );
@@ -204,35 +204,36 @@ test("reports a vector rebuild failure after refreshing configured keywords", as
   assert.equal(database.records.size, fixture.jobs.length);
 });
 
-test("rebuilds vectors for saved jobs before reporting a later category fetch failure", async () => {
+test("propagates a later pagination fetch failure after saving the earlier page", async () => {
   const database = createMockDatabase();
-  const delays = [];
   let requestCount = 0;
   let rebuildCount = 0;
-  const fetchImpl = async () => {
+  const fetchImpl = async (url) => {
     requestCount += 1;
-    if (requestCount === 1) {
-      return new Response(JSON.stringify(fixture), { status: 200 });
+    const requestUrl = new URL(url);
+    if (!requestUrl.searchParams.has("cursor")) {
+      return new Response(JSON.stringify({ ...fixture, nextCursor: "page-2" }), { status: 200 });
     }
     return new Response("", { status: 503 });
   };
 
   await assert.rejects(
-    fetchAllConfiguredJobs({
-      database,
-      fetchImpl,
-      wait: async (milliseconds) => delays.push(milliseconds),
-      rebuildVectors: async () => {
-        rebuildCount += 1;
-        return { listingCount: database.records.size };
+    fetchAndStoreJobs(
+      { keywords: "sales", location: "Philippines" },
+      {
+        database,
+        fetchImpl,
+        rebuildVectors: async () => {
+          rebuildCount += 1;
+          return { listingCount: database.records.size };
+        },
       },
-    }),
+    ),
     /Jobicy API error: 503/,
   );
   assert.equal(requestCount, 2);
-  assert.deepEqual(delays, [JOB_FETCH_DELAY_MS]);
   assert.equal(database.records.size, fixture.jobs.length);
-  assert.equal(rebuildCount, 1);
+  assert.equal(rebuildCount, 0);
 });
 
 test("maps Jobicy fields, longest description, and stable IDs with nullable fields", () => {

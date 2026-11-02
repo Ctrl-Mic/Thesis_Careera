@@ -90,29 +90,44 @@ router.post("/assessment/submit", requireUser, async (request, response) => {
     const latestAttempt = await transaction.assessmentAttempt.findFirst({
       where: { userId: request.assessmentUserId },
       orderBy: [{ takenAt: "desc" }, { attemptId: "desc" }],
-      select: { takenAt: true },
+      select: { attemptId: true, takenAt: true },
     });
+
     const now = new Date();
+    const baseAttempt = latestAttempt ?? {
+      attemptId: randomUUID(),
+      takenAt: now,
+    };
     const takenAt = latestAttempt && latestAttempt.takenAt >= now
       ? new Date(latestAttempt.takenAt.getTime() + 1)
       : now;
-    const createdAttempt = await transaction.assessmentAttempt.create({
-      data: {
-        attemptId: randomUUID(),
-        userId: request.assessmentUserId,
-        takenAt,
-      },
+
+    const attemptToUse = latestAttempt
+      ? await transaction.assessmentAttempt.update({
+          where: { attemptId: latestAttempt.attemptId },
+          data: { takenAt },
+        })
+      : await transaction.assessmentAttempt.create({
+          data: {
+            attemptId: baseAttempt.attemptId,
+            userId: request.assessmentUserId,
+            takenAt,
+          },
+        });
+
+    await transaction.assessmentAnswer.deleteMany({
+      where: { attemptId: attemptToUse.attemptId },
     });
 
     await transaction.assessmentAnswer.createMany({
       data: answers.map(({ category, level }) => ({
-        attemptId: createdAttempt.attemptId,
+        attemptId: attemptToUse.attemptId,
         category,
         level,
       })),
     });
 
-    return createdAttempt;
+    return attemptToUse;
   });
 
   let warning;
