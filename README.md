@@ -340,3 +340,5 @@ This is a prototype application, so some sections are still designed as UI place
 ## License
 
 This project is currently for academic/thesis use. Add a license if you plan to share or distribute it publicly.
+
+Rene Baterbonia
